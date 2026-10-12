@@ -1,0 +1,41 @@
+name: Publish Strato Mali Test APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Successful Build Strato Mali run ID"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download successful Strato Mali APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Strato-Mali-APK
+          path: apk
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Publish rolling private test prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          ls -lh apk
+          APK="$(find apk -type f -name '*.apk' | head -n 1)"
+          test -n "$APK"
+          gh release delete strato-mali-latest --repo "${GITHUB_REPOSITORY}" --cleanup-tag -y || true
+          gh release create strato-mali-latest "$APK#Strato-Mali-latest.apk" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "Strato Mali latest test" \
+            --notes "Private rolling Strato Mali test build with bundled PanVK G615 integration." \
+            --prerelease

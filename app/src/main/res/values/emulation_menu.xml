@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="emulation_menu">Strato Mali</string>
+    <string name="emulation_resume">Continue game</string>
+    <string name="emulation_controls">On-screen controls</string>
+    <string name="emulation_fps">Show FPS</string>
+    <string name="emulation_mute">Mute audio</string>
+    <string name="emulation_exit">Exit game</string>
+    <string name="emulation_exit_message">Exit this game? Unsaved progress will be lost.</string>
+</resources>

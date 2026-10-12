@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="logoBackground">#0B0F17</color>
+
+    <color name="colorPerfStatsPrimary">#B31E88FF</color>
+    <color name="colorPerfStatsSecondary">#B300C8FF</color>
+
+    <!-- Strato Mali: electric blueberry blue + cool cyan on deep graphite. -->
+    <color name="seed">#1769FF</color>
+    <color name="md_theme_light_primary">#0057E7</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#D9E4FF</color>
+    <color name="md_theme_light_onPrimaryContainer">#001A41</color>
+    <color name="md_theme_light_secondary">#00658A</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#C5E7FF</color>
+    <color name="md_theme_light_onSecondaryContainer">#001E2C</color>
+    <color name="md_theme_light_tertiary">#315DA8</color>
+    <color name="md_theme_light_onTertiary">#FFFFFF</color>
+    <color name="md_theme_light_tertiaryContainer">#D8E2FF</color>
+    <color name="md_theme_light_onTertiaryContainer">#001A41</color>
+    <color name="md_theme_light_error">#BA1A1A</color>
+    <color name="md_theme_light_errorContainer">#FFDAD6</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
+    <color name="md_theme_light_onErrorContainer">#410002</color>
+    <color name="md_theme_light_background">#F9FAFF</color>
+    <color name="md_theme_light_onBackground">#171B24</color>
+    <color name="md_theme_light_surface">#F9FAFF</color>
+    <color name="md_theme_light_onSurface">#171B24</color>
+    <color name="md_theme_light_surfaceVariant">#E1E7F2</color>
+    <color name="md_theme_light_onSurfaceVariant">#414752</color>
+    <color name="md_theme_light_outline">#727985</color>
+    <color name="md_theme_light_inverseOnSurface">#EEF1FA</color>
+    <color name="md_theme_light_inverseSurface">#2C3039</color>
+    <color name="md_theme_light_inversePrimary">#AFC6FF</color>
+    <color name="md_theme_light_shadow">#000000</color>
+    <color name="md_theme_light_surfaceTint">#0057E7</color>
+    <color name="md_theme_light_outlineVariant">#C1C7D3</color>
+    <color name="md_theme_light_scrim">#000000</color>
+
+    <color name="md_theme_dark_primary">#AFC6FF</color>
+    <color name="md_theme_dark_onPrimary">#002D6B</color>
+    <color name="md_theme_dark_primaryContainer">#00429A</color>
+    <color name="md_theme_dark_onPrimaryContainer">#D9E4FF</color>
+    <color name="md_theme_dark_secondary">#75D1FF</color>
+    <color name="md_theme_dark_onSecondary">#003548</color>
+    <color name="md_theme_dark_secondaryContainer">#004D68</color>
+    <color name="md_theme_dark_onSecondaryContainer">#C5E7FF</color>
+    <color name="md_theme_dark_tertiary">#AFC6FF</color>
+    <color name="md_theme_dark_onTertiary">#002E69</color>
+    <color name="md_theme_dark_tertiaryContainer">#164584</color>
+    <color name="md_theme_dark_onTertiaryContainer">#D8E2FF</color>
+    <color name="md_theme_dark_error">#FFB4AB</color>
+    <color name="md_theme_dark_errorContainer">#93000A</color>
+    <color name="md_theme_dark_onError">#690005</color>
+    <color name="md_theme_dark_onErrorContainer">#FFDAD6</color>
+    <color name="md_theme_dark_background">#0B0F17</color>
+    <color name="md_theme_dark_onBackground">#E4E8F2</color>
+    <color name="md_theme_dark_surface">#0B0F17</color>
+    <color name="md_theme_dark_onSurface">#E4E8F2</color>
+    <color name="md_theme_dark_surfaceVariant">#252B36</color>
+    <color name="md_theme_dark_onSurfaceVariant">#C1C7D3</color>
+    <color name="md_theme_dark_outline">#8B929E</color>
+    <color name="md_theme_dark_inverseOnSurface">#171B24</color>
+    <color name="md_theme_dark_inverseSurface">#E4E8F2</color>
+    <color name="md_theme_dark_inversePrimary">#0057E7</color>
+    <color name="md_theme_dark_shadow">#000000</color>
+    <color name="md_theme_dark_surfaceTint">#AFC6FF</color>
+    <color name="md_theme_dark_outlineVariant">#414752</color>
+    <color name="md_theme_dark_scrim">#000000</color>
+</resources>

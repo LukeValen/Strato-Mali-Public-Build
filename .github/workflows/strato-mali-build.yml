@@ -1,0 +1,176 @@
+name: Build Strato Mali
+
+on:
+  workflow_dispatch:
+
+jobs:
+  android:
+    name: Android arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Strato Mali
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Fetch submodules with retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          git submodule sync --recursive
+          for attempt in 1 2 3; do
+            if git -c protocol.version=2 submodule update --init --force --depth=1 --recursive; then
+              exit 0
+            fi
+            echo "Submodule fetch attempt $attempt failed; retrying..."
+            sleep 10
+          done
+          exit 1
+
+      - name: Apply isolated Kirby shader experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C app/libraries/shader-compiler apply --check "$GITHUB_WORKSPACE/experiments/kirby-wscale-ab1/shader-compiler.patch"
+          git -C app/libraries/shader-compiler apply "$GITHUB_WORKSPACE/experiments/kirby-wscale-ab1/shader-compiler.patch"
+          echo "Applied Kirby-only WScale patch; submodule revision unchanged."
+
+      - name: Fix geometry InvocationInfo for NieR compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C app/libraries/shader-compiler apply --check "$GITHUB_WORKSPACE/experiments/nier-automata/geometry-invocation-info.patch"
+          git -C app/libraries/shader-compiler apply "$GITHUB_WORKSPACE/experiments/nier-automata/geometry-invocation-info.patch"
+          echo "Applied geometry input primitive vertex-count fix from Eden."
+
+      - name: Test loader symbol lifetime and bounds (ASan/UBSan)
+        run: python3 tests/test_loader_symbols.py
+
+      - name: Test content metadata and BKTR reads (ASan/UBSan)
+        run: |
+          python3 tests/test_game_content.py
+          python3 tests/test_storage_read.py
+          python3 tests/test_partition_bounds.py
+
+      - name: Test shared memory reclamation and HOS results
+        run: |
+          python3 tests/test_memory_reclaim.py
+          python3 tests/test_result_codes.py
+
+      - name: Test Horizon GetInfo process queries (ASan/UBSan)
+        run: python3 tests/test_get_info.py
+
+      - name: Test Horizon memory attributes (ASan/UBSan)
+        run: python3 tests/test_memory_attributes.py
+
+      - name: Test Host1x relocations (ASan/UBSan)
+        run: |
+          python3 tests/test_host1x_relocations.py
+          python3 tests/test_host1x_commands.py
+          python3 tests/test_nvmap_pins.py
+
+      - name: Test NCA compressed storage (ASan/UBSan)
+        run: |
+          sudo apt-get update && sudo apt-get install -y liblz4-dev
+          python3 tests/test_compressed_storage.py
+
+      - name: Test guest frame pacing (ASan/UBSan)
+        run: python3 tests/test_frame_pacing.py
+
+      - name: Validate Vulkan storage image descriptor wiring
+        run: python3 tests/test_storage_image_bindings.py
+
+      - name: Validate save export and Update/DLC integrity
+        run: python3 tests/test_save_and_content_safety.py
+
+      - name: Validate Mali interface consistency and transparent icon
+        run: python3 tests/test_mali_ui_consistency.py
+
+      - name: Validate Ko-fi welcome dialog and setup isolation
+        run: python3 tests/test_kofi_startup.py
+
+      - name: Validate NieR geometry and Mali diagnostic isolation
+        run: python3 tests/test_nier_mali.py
+
+      - name: Validate Kirby-only GPU diagnostics
+        run: python3 tests/test_kirby_diagnostics.py
+
+      - name: Validate isolated Kirby WScale experiment
+        run: python3 tests/test_kirby_wscale_experiment.py
+
+      - name: Test NVDEC and VIC video pipeline (ASan/UBSan)
+        run: |
+          sudo apt-get update && sudo apt-get install -y libavcodec-dev libavutil-dev
+          python3 tests/test_video_pipeline.py
+          python3 tests/test_video_completion.py
+
+      - name: Test internal resolution scaling
+        run: |
+          sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers glslang-tools
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 python3 tests/test_resolution_scaling.py
+          python3 tests/test_resolution_vulkan.py
+
+      - name: Test software keyboard text encoding
+        run: |
+          python3 tests/test_keyboard_text.py
+          python3 tests/test_inline_keyboard.py
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Bundle latest PanVK G615 for Strato Mali
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          rm -rf /tmp/panvk-strato
+          mkdir -p /tmp/panvk-strato app/src/main/assets/gpu_drivers
+          gh release download panvk-strato-latest \
+            --repo "LukeValen/panvk-kbase-android" \
+            --pattern "PanVK-G615-Strato-Mali-*.zip" \
+            --dir /tmp/panvk-strato
+          PANVK_ZIP="$(find /tmp/panvk-strato -type f -name 'PanVK-G615-Strato-Mali-*.zip' | head -n1)"
+          test -n "$PANVK_ZIP"
+          unzip -l "$PANVK_ZIP" | grep -q 'libvulkan_panfrost.so'
+          unzip -p "$PANVK_ZIP" meta.json | grep -q '"name": "PanVK G615 Strato Mali"'
+          cp "$PANVK_ZIP" app/src/main/assets/gpu_drivers/PanVK-G615-Strato-Mali-latest.zip
+
+      - name: Restore native CCache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          max-size: 3Gi
+
+      - name: Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/
+          key: ${{ runner.os }}-strato-mali-gradle-${{ hashFiles('**/build.gradle', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-strato-mali-gradle-
+
+      - name: Validate settings resources and Kotlin
+        run: ./gradlew --no-daemon --stacktrace compileMainlineReleaseKotlin
+
+      - name: Build Strato Mali
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+        run: ./gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand assembleMainlineRelease
+
+      - name: Test firmware installation rollback
+        run: ./gradlew --no-daemon testMainlineReleaseUnitTest --tests org.stratoemu.strato.setup.DirectoryTransactionTest --tests org.stratoemu.strato.applet.swkbd.SoftwareKeyboardSessionTest
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Strato-Mali-APK
+          path: app/build/outputs/apk/mainline/release/*.apk
+          if-no-files-found: error
+
+

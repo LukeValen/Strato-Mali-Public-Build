@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="settings_blue">#2C9CFF</color>
+    <color name="settings_background">#07162F</color>
+    <color name="settings_container_blue">#123C76</color>
+    <color name="settings_on_container">#F1F7FF</color>
+    <color name="settings_secondary_text">#AEC3E4</color>
+    <color name="settings_outline">#296AB1</color>
+    <style name="SettingsBlueTheme">
+        <item name="colorPrimary">@color/settings_blue</item>
+        <item name="colorAccent">@color/settings_blue</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">@color/settings_container_blue</item>
+        <item name="colorOnPrimaryContainer">@color/settings_on_container</item>
+        <item name="colorSecondary">@color/settings_blue</item>
+        <item name="colorSecondaryContainer">@color/settings_container_blue</item>
+        <item name="colorOnSecondaryContainer">@color/settings_on_container</item>
+        <item name="colorSurface">@color/settings_background</item>
+        <item name="colorOnSurface">@color/settings_on_container</item>
+        <item name="colorSurfaceVariant">@color/settings_container_blue</item>
+        <item name="colorOnSurfaceVariant">@color/settings_secondary_text</item>
+        <item name="android:colorBackground">@color/settings_background</item>
+        <item name="android:statusBarColor">@color/settings_background</item>
+        <item name="android:navigationBarColor">@color/settings_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+    <string name="settings_hub_title">Settings</string>
+    <string name="settings_version_label">Version %1$s</string>
+    <string name="settings_tab_graphics">Graphics</string>
+    <string name="settings_tab_gpu">GPU</string>
+    <string name="settings_tab_folders">Game folders</string>
+    <string name="settings_tab_drivers">Graphics drivers</string>
+    <string name="settings_tab_general">General</string>
+    <string name="settings_graphics_summary">Display, aspect ratio, frame statistics and shader cache.</string>
+    <string name="settings_gpu_summary">Buffering, GPU memory and advanced compatibility options.</string>
+    <string name="settings_folders_summary">Choose your game folder and control which files appear in the library.</string>
+    <string name="settings_drivers_summary">Import, select or remove graphics driver packages.</string>
+    <string name="settings_general_summary">System, audio, controls, keys, firmware and app preferences.</string>
+</resources>

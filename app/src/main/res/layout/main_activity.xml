@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/mali_library_background"
+    android:fitsSystemWindows="true"
+    tools:context=".MainActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:fitsSystemWindows="true"
+        app:elevation="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_scrollFlags="scroll">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="84dp"
+                android:layout_marginHorizontal="18dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:contentDescription="@string/app_name"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/strato_mali_logo_transparent" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Strato"
+                    android:textColor="@color/mali_text"
+                    android:textSize="25sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-medium"
+                    android:text=" Mali"
+                    android:textColor="@color/mali_cyan"
+                    android:textSize="25sp" />
+
+                <ImageButton
+                    android:id="@+id/search_icon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/mali_circle_button"
+                    android:contentDescription="@string/search"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_search"
+                    android:tint="@color/mali_text" />
+
+                <ImageButton
+                    android:id="@+id/settings_icon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/mali_circle_button"
+                    android:contentDescription="@string/settings"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_settings"
+                    android:tint="@color/mali_text" />
+            </LinearLayout>
+
+            <org.stratoemu.strato.views.SearchBarView
+                android:id="@+id/search_bar"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginHorizontal="18dp"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/mali_card"
+                app:cardCornerRadius="24dp"
+                app:strokeColor="@color/mali_outline"
+                app:strokeWidth="1dp" />
+
+            <LinearLayout
+                android:id="@+id/featured_panel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="18dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/featured_title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-medium"
+                        android:maxLines="1"
+                        android:textColor="@color/mali_text"
+                        android:textSize="27sp"
+                        tools:text="Celeste" />
+
+                    <TextView
+                        android:id="@+id/featured_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/mali_chip"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="7dp"
+                        android:text="@string/mali_ready"
+                        android:textColor="@color/mali_muted"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/play_button"
+                        android:layout_width="0dp"
+                        android:layout_height="54dp"
+                        android:layout_weight="1.3"
+                        android:text="@string/mali_play"
+                        android:textAllCaps="false"
+                        android:textColor="@color/mali_text"
+                        android:textSize="16sp"
+                        app:backgroundTint="@color/mali_primary"
+                        app:cornerRadius="27dp"
+                        app:icon="@drawable/ic_play"
+                        app:iconTint="@color/mali_text" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/details_button"
+                        android:layout_width="0dp"
+                        android:layout_height="54dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="@string/mali_details"
+                        android:textAllCaps="false"
+                        android:textColor="@color/mali_text"
+                        android:textSize="15sp"
+                        app:backgroundTint="@color/mali_card"
+                        app:cornerRadius="27dp"
+                        app:strokeColor="@color/mali_outline"
+                        app:strokeWidth="1dp" />
+
+                    <ImageButton
+                        android:id="@+id/log_icon"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/mali_circle_button"
+                        android:contentDescription="@string/share_logs"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_log"
+                        android:tint="@color/mali_text" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/rom_placeholder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginBottom="12dp"
+                android:text="@string/searching_roms"
+                android:textColor="@color/mali_muted"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/app_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:overScrollMode="ifContentScrolls"
+            android:paddingHorizontal="12dp"
+            android:paddingBottom="114dp" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <LinearLayout
+        android:id="@+id/library_dock"
+        android:layout_width="match_parent"
+        android:layout_height="76dp"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="14dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/mali_dock_background"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="5dp">
+
+        <TextView
+            android:id="@+id/nav_games"
+            style="@style/MaliDockItem"
+            android:background="@drawable/mali_dock_active"
+            android:drawableTop="@drawable/mali_ic_games"
+            android:text="@string/mali_games"
+            android:textColor="@color/mali_cyan" />
+
+        <TextView
+            android:id="@+id/nav_install"
+            style="@style/MaliDockItem"
+            android:drawableTop="@drawable/mali_ic_install"
+            android:text="@string/mali_install" />
+
+        <TextView
+            android:id="@+id/nav_add"
+            style="@style/MaliDockItem"
+            android:drawableTop="@drawable/ic_add"
+            android:text="@string/mali_add" />
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

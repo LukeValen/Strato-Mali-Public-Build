@@ -1,0 +1,8 @@
+<resources>
+    <color name="settings_blue">#2C9CFF</color>
+    <color name="settings_background">#07162F</color>
+    <color name="settings_container_blue">#123C76</color>
+    <color name="settings_on_container">#F1F7FF</color>
+    <color name="settings_secondary_text">#AEC3E4</color>
+    <color name="settings_outline">#296AB1</color>
+</resources>

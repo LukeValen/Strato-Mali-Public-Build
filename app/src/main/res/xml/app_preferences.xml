@@ -1,0 +1,77 @@
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:key="category_content"
+        android:title="@string/content">
+        <org.stratoemu.strato.preference.SetupPreference
+            app:key="welcome_setup"
+            app:persistent="false"
+            app:title="@string/setup_open" />
+        <org.stratoemu.strato.preference.DocumentsProviderPreference
+            app:key="document_provider"
+            app:summary="@string/open_data_directory_summary"
+            app:title="@string/open_data_directory" />
+        <org.stratoemu.strato.preference.FolderPickerPreference
+            app:key="search_location"
+            app:title="@string/search_location" />
+        <org.stratoemu.strato.preference.KeyPickerPreference
+            app:key="prod_keys"
+            app:title="@string/prod_keys"
+            app:useSimpleSummaryProvider="true" />
+        <org.stratoemu.strato.preference.KeyPickerPreference
+            app:key="title_keys"
+            app:title="@string/title_keys"
+            app:useSimpleSummaryProvider="true" />
+        <org.stratoemu.strato.preference.ImportExportSavesPreference
+            app:key="save_data_manager"
+            app:title="@string/save_data_manager" />
+        <org.stratoemu.strato.preference.FirmwareImportPreference
+            app:key="firmware"
+            app:title="@string/firmware" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_appearance"
+        android:title="@string/appearance">
+        <org.stratoemu.strato.preference.ThemePreference
+            android:defaultValue="2"
+            android:entries="@array/app_theme"
+            app:key="app_theme"
+            app:title="@string/theme"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            app:key="use_material_you"
+            app:summaryOff="@string/use_material_you_desc_off"
+            app:summaryOn="@string/use_material_you_desc_on"
+            app:title="@string/use_material_you" />
+        <org.stratoemu.strato.preference.LanguagePreference
+            app:key="app_language"
+            app:persistent="false"
+            app:title="@string/app_language" />
+        <org.stratoemu.strato.preference.IntegerListPreference
+            android:defaultValue="1"
+            android:entries="@array/layout_type"
+            app:key="layout_type"
+            app:title="@string/layout_type"
+            app:useSimpleSummaryProvider="true" />
+        <org.stratoemu.strato.preference.IntegerListPreference
+            android:defaultValue="0"
+            android:entries="@array/sort_apps_by"
+            app:key="sort_apps_by"
+            app:refreshRequired="true"
+            app:title="@string/sort_apps_by"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summaryOff="@string/select_action_desc_off"
+            android:summaryOn="@string/select_action_desc_on"
+            app:key="select_action"
+            app:title="@string/select_action" />
+        <org.stratoemu.strato.preference.RefreshSwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summaryOff="@string/filter_invalid_files_desc_off"
+            android:summaryOn="@string/filter_invalid_files_desc_on"
+            app:key="filter_invalid_files"
+            app:title="@string/filter_invalid_files"/>
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

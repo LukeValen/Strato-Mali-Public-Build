@@ -1,0 +1,16 @@
+Strato Mali NVDEC/VIC video support
+
+Packet reconstruction, register layouts and compatibility helpers are adapted
+from Eden/Yuzu. Original copyright and license headers remain in the sources.
+Reference: Eden commit 746a6d9160c817a173d97f645c7b8abf75020f32.
+These components are GPL-3.0-or-later; see GPL-3.0.txt.
+
+FFmpeg n6.1.2 is built with software H.264, VP8 and VP9 decoders only, without
+GPL/nonfree options. FFmpeg is LGPL-2.1-or-later; see LGPL-2.1.txt.
+Source: https://github.com/FFmpeg/FFmpeg/tree/n6.1.2
+
+The corresponding Strato Mali sources and exact FFmpeg build configuration
+are available in this build's source branch at:
+https://github.com/LukeValen/Strato-Mali/tree/feature/video-playback
+The APK is built by .github/workflows/strato-mali-build.yml. See
+app/src/main/cpp/skyline/soc/host1x/video/CMakeLists.txt for FFmpeg options.

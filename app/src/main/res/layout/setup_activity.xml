@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@drawable/mali_setup_background">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:paddingTop="38dp"
+        android:paddingBottom="24dp">
+        <ImageView
+            android:layout_width="152dp"
+            android:layout_height="152dp"
+            android:layout_marginBottom="18dp"
+            android:src="@drawable/strato_mali_logo_transparent"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/app_name" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/setup_welcome"
+            android:textColor="#A4D5FF"
+            android:textSize="32sp"
+            android:fontFamily="sans-serif-medium"
+            android:textStyle="bold"
+            android:accessibilityHeading="true" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="34dp"
+            android:text="@string/setup_intro"
+            android:textColor="#BDD1EB"
+            android:textSize="16sp" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/keys_button"
+            style="@style/SetupButton"
+            android:text="@string/setup_keys"
+            app:icon="@drawable/setup_key" />
+        <TextView
+            android:id="@+id/keys_status"
+            style="@style/SetupHint"
+            android:text="@string/setup_keys_help" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/firmware_button"
+            style="@style/SetupButton"
+            android:text="@string/setup_firmware"
+            app:icon="@drawable/setup_chip" />
+        <TextView
+            android:id="@+id/firmware_status"
+            style="@style/SetupHint"
+            android:text="@string/setup_firmware_help" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/games_button"
+            style="@style/SetupButton"
+            android:text="@string/setup_games"
+            app:icon="@drawable/setup_folder" />
+        <TextView
+            android:id="@+id/games_status"
+            style="@style/SetupHint"
+            android:text="@string/setup_games_help" />
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:indeterminateTint="#39B8FF"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/status"
+            style="@style/SetupHint"
+            android:accessibilityLiveRegion="polite" />
+        <Space
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/start_button"
+            style="@style/SetupButton"
+            android:layout_marginTop="20dp"
+            android:text="@string/setup_start" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/back_button"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/setup_back"
+            android:textColor="#72B6FF" />
+    </LinearLayout>
+</ScrollView>

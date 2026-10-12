@@ -1,0 +1,42 @@
+diff --git a/backend/spirv/emit_spirv_context_get_set.cpp b/backend/spirv/emit_spirv_context_get_set.cpp
+index c0f05bc..8902aa4 100644
+--- a/backend/spirv/emit_spirv_context_get_set.cpp
++++ b/backend/spirv/emit_spirv_context_get_set.cpp
+@@ -8,6 +8,7 @@
+ #include <shader_compiler/backend/spirv/emit_spirv_instructions.h>
+ #include <shader_compiler/backend/spirv/spirv_emit_context.h>
+ #include <shader_compiler/common/log.h>
++#include <shader_compiler/common/settings.h>
+
+ namespace Shader::Backend::SPIRV {
+ namespace {
+@@ -538,6 +539,29 @@ Id EmitInvocationInfo(EmitContext& ctx) {
+     case Stage::TessellationEval:
+         return ctx.OpShiftLeftLogical(ctx.U32[1], ctx.OpLoad(ctx.U32[1], ctx.patch_vertices_in),
+                                       ctx.Const(16u));
++    case Stage::Geometry: {
++        // Preserve byte-for-byte legacy return behavior for every other game.
++        // Only NieR:Automata running with a Mali GPU enables this workaround.
++        if (!Shader::Settings::nier_mali_geometry_invocation_fix.load(std::memory_order_relaxed)) {
++            LOG_WARNING(Shader, "(STUBBED) called");
++            return ctx.Const(0x00ff0000u);
++        }
++        // Match Maxwell's input primitive size (Eden/yuzu). The old
++        // 0x00ff0000 fallback falsely reported 255 vertices, even for
++        // a 1/2/3/4/6-vertex geometry input primitive.
++        u32 vertices{};
++        switch (ctx.runtime_info.input_topology) {
++        case InputTopology::Points: vertices = 1; break;
++        case InputTopology::Lines: vertices = 2; break;
++        case InputTopology::LinesAdjacency: vertices = 4; break;
++        case InputTopology::Triangles: vertices = 3; break;
++        case InputTopology::TrianglesAdjacency: vertices = 6; break;
++        }
++        if (!vertices) {
++            throw NotImplementedException("Invalid geometry input topology");
++        }
++        return ctx.OpShiftLeftLogical(ctx.U32[1], ctx.Const(vertices), ctx.Const(16u));
++    }
+     default:
+         LOG_WARNING(Shader, "(STUBBED) called");
+         return ctx.Const(0x00ff0000u);

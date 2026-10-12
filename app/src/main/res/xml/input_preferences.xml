@@ -1,0 +1,16 @@
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:key="category_input"
+        android:title="@string/input"
+        app:initialExpandedChildrenCount="4">
+        <org.stratoemu.strato.preference.ControllerPreference index="0" />
+        <org.stratoemu.strato.preference.ControllerPreference index="1" />
+        <org.stratoemu.strato.preference.ControllerPreference index="2" />
+        <org.stratoemu.strato.preference.ControllerPreference index="3" />
+        <org.stratoemu.strato.preference.ControllerPreference index="4" />
+        <org.stratoemu.strato.preference.ControllerPreference index="5" />
+        <org.stratoemu.strato.preference.ControllerPreference index="6" />
+        <org.stratoemu.strato.preference.ControllerPreference index="7" />
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

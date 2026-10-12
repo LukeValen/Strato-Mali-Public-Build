@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mali_ready">Ready to play</string>
+    <string name="mali_play">Play</string>
+    <string name="mali_details">Details</string>
+    <string name="mali_games">Games</string>
+    <string name="mali_install">Install</string>
+    <string name="mali_add">Add</string>
+</resources>

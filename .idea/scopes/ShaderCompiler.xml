@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="ShaderCompiler" pattern="file[strato.app.main]:shader-compiler//*" />
+</component>

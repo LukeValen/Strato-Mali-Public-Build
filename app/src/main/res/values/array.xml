@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="log_level">
+        <item>Verbose</item>
+        <item>Debug</item>
+        <item>Info</item>
+        <item>Warn</item>
+        <item>Error</item>
+        <item>Disabled</item>
+    </string-array>
+    <string-array name="layout_type">
+        <item>List</item>
+        <item>Grid</item>
+        <item>Grid Compact</item>
+    </string-array>
+    <string-array name="sort_apps_by">
+        <item>A-Z</item>
+        <item>Z-A</item>
+    </string-array>
+    <string-array name="app_theme">
+        <item>Light</item>
+        <item>Dark</item>
+        <item>Use System Default</item>
+    </string-array>
+    <string-array name="system_languages">
+        <item>American English</item>
+        <item>British English</item>
+        <item>Français (French)</item>
+        <item>Français Canadien (Canadian French)</item>
+        <item>Deutsch (German)</item>
+        <item>Español (Spanish)</item>
+        <item>Español Latinoamericano (Latin American Spanish)</item>
+        <item>Italiano (Italian)</item>
+        <item>Nederlands (Dutch)</item>
+        <item>Português (Portuguese)</item>
+        <item>Português do Brasil (Brazilian Portuguese)</item>
+        <item>Русский (Russian)</item>
+        <item>日本語 (Japanese)</item>
+        <item>汉语 (Chinese)</item>
+        <item>繁體中文 (Traditional Chinese)</item>
+        <item>简体中文 (Simplified Chinese)</item>
+        <item>한국어 (Korean)</item>
+        <item>臺語 (Taiwanese)</item>
+    </string-array>
+    <integer-array name="system_languages_val">
+        <item>1</item>  <!-- American English -->
+        <item>12</item> <!-- British English -->
+        <item>2</item>  <!-- French -->
+        <item>13</item> <!-- Canadian French -->
+        <item>3</item>  <!-- German -->
+        <item>5</item>  <!-- Spanish -->
+        <item>14</item> <!-- Latin American Spanish -->
+        <item>4</item>  <!-- Italian -->
+        <item>8</item>  <!-- Dutch -->
+        <item>9</item>  <!-- Portuguese -->
+        <item>17</item> <!-- Brazilian Portuguese -->
+        <item>10</item> <!-- Russian -->
+        <item>0</item>  <!-- Japanese -->
+        <item>6</item>  <!-- Chinese -->
+        <item>16</item> <!-- Traditional Chinese -->
+        <item>15</item> <!-- Simplified Chinese -->
+        <item>7</item>  <!-- Korean -->
+        <item>11</item> <!-- Taiwanese -->
+    </integer-array>
+    <string-array name="system_region">
+        <item>Auto</item>
+        <item>Japan</item>
+        <item>The Americas</item>
+        <item>Europe</item>
+        <item>Australia / New Zealand</item>
+        <item>Hong Kong / Taiwan / South Korea</item>
+        <item>China</item>
+    </string-array>
+    <integer-array name="system_region_val">
+        <item>-1</item> <!-- Auto -->
+        <item>0</item>  <!-- Japan -->
+        <item>1</item>  <!-- The Americas -->
+        <item>2</item>  <!-- Europe -->
+        <item>3</item>  <!-- Australia / New Zealand -->
+        <item>4</item>  <!-- Hong Kong / Taiwan / South Korea -->
+        <item>5</item>  <!-- China -->
+    </integer-array>
+    <string-array name="aspect_ratios">
+        <item>16:9 (Switch, Recommended)</item>
+        <item>21:9 (Ultrawide Mods)</item>
+        <item>Device Aspect Ratio (Stretch to fit)</item>
+    </string-array>
+    <string-array name="orientation_entries">
+        <item>Auto</item>
+        <item>Landscape</item>
+        <item>Landscape (reverse)</item>
+    </string-array>
+    <integer-array name="orientation_values">
+        <item>6</item>
+        <item>0</item>
+        <item>8</item>
+    </integer-array>
+</resources>

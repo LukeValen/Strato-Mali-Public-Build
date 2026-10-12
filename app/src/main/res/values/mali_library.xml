@@ -1,0 +1,22 @@
+<resources>
+    <color name="mali_primary">#096DFA</color>
+    <color name="mali_cyan">#48CEFF</color>
+    <color name="mali_text">#F3F8FF</color>
+    <color name="mali_muted">#B7CBE6</color>
+    <color name="mali_card">#142D52</color>
+    <color name="mali_outline">#3D76B7</color>
+    <style name="MaliDockItem">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:drawablePadding">5dp</item>
+        <item name="android:drawableTint">@color/mali_text</item>
+        <item name="android:textColor">@color/mali_text</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+    </style>
+</resources>

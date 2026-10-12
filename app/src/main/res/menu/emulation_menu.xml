@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/menu_resume" android:title="@string/emulation_resume" />
+    <group android:checkableBehavior="all">
+        <item android:id="@+id/menu_controls" android:title="@string/emulation_controls" />
+        <item android:id="@+id/menu_fps" android:title="@string/emulation_fps" />
+        <item android:id="@+id/menu_mute" android:title="@string/emulation_mute" />
+    </group>
+    <item android:id="@+id/menu_exit" android:title="@string/emulation_exit" />
+</menu>

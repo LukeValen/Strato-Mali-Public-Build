@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/stick_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal"
+    android:animateLayoutChanges="true"
+    android:defaultFocusHighlightEnabled="false"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:focusedByDefault="true"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/stick_title"
+        style="?attr/textAppearanceHeadlineSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout_marginBottom="10dp"
+        android:animateLayoutChanges="true"
+        android:text="@string/stick_button" />
+
+    <TextView
+        android:id="@+id/stick_subtitle"
+        style="?attr/textAppearanceBodyLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:animateLayoutChanges="true"
+        android:text="@string/use_button_axis"
+        android:textAlignment="center" />
+
+    <RelativeLayout
+        android:id="@+id/stick_circle_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:gravity="center">
+
+        <ImageView
+            android:id="@+id/stick_circle_icon"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:contentDescription="@string/buttons"
+            android:outlineProvider="bounds"
+            android:src="@drawable/ic_button"
+            app:tint="?android:attr/textColorPrimary" />
+
+
+        <RelativeLayout
+            android:id="@+id/stick_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@id/stick_circle_icon"
+            android:layout_alignTop="@id/stick_circle_icon"
+            android:layout_alignEnd="@id/stick_circle_icon"
+            android:layout_alignBottom="@id/stick_circle_icon">
+
+            <ImageView
+                android:id="@+id/stick_icon"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_margin="15dp"
+                android:contentDescription="@string/buttons"
+                android:outlineProvider="bounds"
+                android:src="@drawable/ic_stick"
+                app:tint="?android:attr/textColorPrimary" />
+
+            <TextView
+                android:id="@+id/stick_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignStart="@id/stick_icon"
+                android:layout_alignTop="@id/stick_icon"
+                android:layout_alignEnd="@id/stick_icon"
+                android:layout_alignBottom="@id/stick_icon"
+                android:alpha="0.6"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textAlignment="center"
+                android:textColor="@android:color/white"
+                android:textSize="26sp"
+                tools:text="R" />
+
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+    <SeekBar
+        android:id="@+id/stick_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:max="100"
+        android:progress="25"
+        android:secondaryProgressTintMode="screen"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end">
+
+        <Button
+            android:id="@+id/stick_reset"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="@string/reset" />
+
+        <Button
+            android:id="@+id/stick_next"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/next" />
+    </LinearLayout>
+</LinearLayout>

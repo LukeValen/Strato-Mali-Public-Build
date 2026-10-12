@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <uses-feature
+        android:name="android.hardware.vulkan.version"
+        android:required="true"
+        android:version="0x401000" />
+
+    <application
+        android:name=".StratoApplication"
+        android:enableOnBackInvokedCallback="true"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_descriptor"
+        android:icon="@drawable/strato_mali_launcher_exact"
+        android:roundIcon="@drawable/strato_mali_launcher_exact"
+        android:isGame="true"
+        android:appCategory="game"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
+
+        <profileable android:shell="true" />
+
+        <meta-data android:name="android.game_mode_config"
+            android:resource="@xml/game_mode_config" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".setup.SetupActivity"
+            android:exported="false"
+            android:theme="@style/SetupTheme" />
+
+        <activity
+            android:name=".settings.SettingsActivity"
+            android:exported="true"
+            android:label="@string/settings"
+            android:launchMode="singleTop"
+            android:parentActivityName=".MainActivity">
+        </activity>
+
+        <activity
+            android:name=".input.ControllerActivity"
+            android:exported="true"
+            android:parentActivityName=".settings.SettingsActivity">
+        </activity>
+
+        <activity
+            android:name=".preference.GpuDriverActivity"
+            android:exported="true"
+            android:parentActivityName=".settings.SettingsActivity">
+        </activity>
+
+        <activity
+            android:name=".input.onscreen.OnScreenEditActivity"
+            android:exported="true"
+            android:screenOrientation="sensorLandscape"
+            tools:ignore="LockedOrientationActivity"
+            android:parentActivityName=".input.ControllerActivity">
+        </activity>
+
+        <activity
+            android:name=".EmulationActivity"
+            android:supportsPictureInPicture="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:process="${emulationProcess}"
+            android:parentActivityName=".MainActivity">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:mimeType="application/nro"
+                    android:pathPattern=".*\\.nro"
+                    android:scheme="content"
+                    tools:ignore="AppLinkUrlError" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:mimeType="text/plain"
+                    android:pathPattern=".*\\.nro"
+                    android:scheme="content"
+                    tools:ignore="IntentFilterUniqueDataAttributes" />
+                <data
+                    android:mimeType="application/octet-stream"
+                    android:pathPattern=".*\\.nro"
+                    android:scheme="content"
+                    tools:ignore="IntentFilterUniqueDataAttributes" />
+                <data
+                    android:mimeType="application/nro"
+                    android:scheme="content"
+                    tools:ignore="IntentFilterUniqueDataAttributes" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name=".provider.DocumentsProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
+        <meta-data
+            android:name="com.android.graphics.injectLayers.enable"
+            android:value="true" />
+    </application>
+</manifest>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_welcome">Welcome to\nStrato Mali</string>
+    <string name="setup_intro">Select your keys, firmware and games folder to get started.</string>
+    <string name="setup_keys">1. Select prod.keys</string>
+    <string name="setup_firmware">2. Install firmware</string>
+    <string name="setup_games">3. Select games folder</string>
+    <string name="setup_keys_help">Required · Import your prod.keys file.</string>
+    <string name="setup_firmware_help">Recommended · Select a firmware ZIP. You can also install it later in Settings.</string>
+    <string name="setup_games_help">Choose the folder containing your games.</string>
+    <string name="setup_keys_ready">Keys imported</string>
+    <string name="setup_folder_ready">Games folder selected</string>
+    <string name="setup_firmware_installed">Firmware %1$s installed</string>
+    <string name="setup_start">Start playing</string>
+    <string name="setup_back">Back</string>
+    <string name="setup_importing_keys">Importing keys…</string>
+    <string name="setup_checking_folder">Checking games folder…</string>
+    <string name="setup_unreadable_folder">The selected folder cannot be read</string>
+    <string name="setup_failed">Import failed: %1$s</string>
+    <string name="setup_open">Open setup</string>
+    <style name="SetupTheme" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#198DFF</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSurface">#081833</item>
+        <item name="android:windowBackground">@drawable/mali_setup_background</item>
+        <item name="android:statusBarColor">#07162F</item>
+        <item name="android:navigationBarColor">#07162F</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+    <style name="SetupButton" parent="Widget.Material3.Button">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">64dp</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@color/setup_button_text</item>
+        <item name="backgroundTint">@color/setup_button_background</item>
+        <item name="cornerRadius">32dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">#2F8DF6</item>
+        <item name="rippleColor">#669BDBFF</item>
+        <item name="iconTint">@color/setup_button_text</item>
+        <item name="iconPadding">14dp</item>
+        <item name="iconGravity">textStart</item>
+    </style>
+    <style name="SetupHint">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">#BED2ED</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:layout_marginBottom">20dp</item>
+    </style>
+</resources>

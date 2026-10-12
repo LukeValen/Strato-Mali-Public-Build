@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CustomEditTextPreference">
+        <attr name="limit" format="integer" />
+    </declare-styleable>
+    <attr name="chipChoiceStyle" format="reference" />
+    <declare-styleable name="IntegerListPreference">
+        <!-- The human-readable array to present as a list. Each entry must have a corresponding
+             index in entryValues. -->
+        <attr format="reference" name="entries"/>
+        <attr name="android:entries"/>
+        <!-- The array to find the value to save for a preference when an entry from
+             entries is selected. If a user clicks on the second item in entries, the
+             second item in this array will be saved to the preference. -->
+        <attr format="reference" name="entryValues"/>
+        <attr name="android:entryValues"/>
+        <!-- Whether the preference should automatically set its summary to the value saved for the
+             preference, and update the summary when the value is changed. Defaults to false. -->
+        <attr format="boolean" name="useSimpleSummaryProvider"/>
+        <!-- Whether the preference should request a game list refresh or not. Defaults to false. -->
+        <attr format="boolean" name="refreshRequired"/>
+    </declare-styleable>
+    <declare-styleable name="LicensePreference">
+        <!-- An optional copyright notice for the library -->
+        <attr format="string" name="libraryCopyright"/>
+        <!-- A reference to a string resource containing the license of the library -->
+        <attr format="reference" name="libraryLicense"/>
+        <!-- A URL to the library -->
+        <attr format="string" name="libraryUrl"/>
+    </declare-styleable>
+    <declare-styleable name="ControllerPreference">
+        <!-- Index of the controller the preference corresponds to -->
+        <attr name="index" format="integer" />
+    </declare-styleable>
+</resources>
