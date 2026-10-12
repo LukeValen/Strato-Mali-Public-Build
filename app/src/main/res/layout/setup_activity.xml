@@ -18,7 +18,7 @@
             android:layout_width="152dp"
             android:layout_height="152dp"
             android:layout_marginBottom="18dp"
-            android:src="@drawable/strato_mali_logo_transparent"
+            android:src="@drawable/mali_welcome_logo_adm"
             android:scaleType="fitCenter"
             android:contentDescription="@string/app_name" />
         <TextView

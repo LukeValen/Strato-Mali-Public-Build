@@ -86,6 +86,9 @@ jobs:
       - name: Validate Mali interface consistency and transparent icon
         run: python3 tests/test_mali_ui_consistency.py
 
+      - name: Validate welcome image isolation
+        run: python3 tests/test_setup_welcome_logo.py
+
       - name: Validate curated library compatibility badges
         run: python3 tests/test_game_compatibility.py
 

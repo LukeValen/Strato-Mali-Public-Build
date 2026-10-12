@@ -53,7 +53,7 @@ class MaliUIConsistencyTests(unittest.TestCase):
                      "back_button", "keys_status", "firmware_status", "games_status", "progress", "status"):
             self.assertIn("@+id/" + name, ids)
         self.assertEqual(doc.attrib[ANDROID + "background"], "@drawable/mali_setup_background")
-        self.assertTrue(any(x.attrib.get(ANDROID + "src") == "@drawable/strato_mali_logo_transparent"
+        self.assertTrue(any(x.attrib.get(ANDROID + "src") == "@drawable/mali_welcome_logo_adm"
                             for x in doc.iter()))
 
     def test_settings_tabs_and_fragment_inflation_preserved(self):
