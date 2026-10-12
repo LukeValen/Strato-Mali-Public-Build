@@ -344,11 +344,40 @@ namespace skyline::gpu {
 
         WaitOnBacking();
 
+        // Lightweight path counts for NieR on Mali. A setting being on does
+        // not imply a dispatch: native BCn textures bypass both decoders.
+        const auto traceNieRBcn = [&](const char *path, std::atomic<u32> &counter, i64 cpuMicros = -1) {
+            if (!gpu.nierDiagnosticsEnabled || guest->format->vkFormat < vk::Format::eBc1RgbaUnormBlock ||
+                guest->format->vkFormat > vk::Format::eBc7SrgbBlock) return;
+            const u32 count{counter.fetch_add(1, std::memory_order_relaxed) + 1};
+            if (count <= 4 || (count % 128 == 0 && count <= 32768))
+                LOGI("NIER_BCN path={} count={} format={} levels={} layers={} inputBytes={} outputBytes={} cpuDecodeUs={}",
+                     path, count, static_cast<u32>(guest->format->vkFormat), levelCount, layerCount,
+                     deswizzledSurfaceSize, surfaceSize, cpuMicros);
+        };
+
         u8 *bufferData;
+        bool bcnStorageUpload{};
         auto stagingBuffer{[&]() -> std::shared_ptr<memory::StagingBuffer> {
             if (tiling == vk::ImageTiling::eOptimal || !std::holds_alternative<memory::Image>(backing)) {
                 // We need a staging buffer for all optimal copies (since we aren't aware of the host optimal layout) and linear textures which we cannot map on the CPU since we do not have access to their backing VkDeviceMemory
-                auto stagingBuffer{gpu.memory.AllocateStagingBuffer(surfaceSize)};
+                // The compute decoder writes directly into the upload buffer.
+                // Other uploads retain the original transfer-only buffer usage.
+                const bool computeUpload{gpu.bcnComputeEnabled && guest->format != format &&
+                    BcnComputeJob::Supports(guest->format->vkFormat) && !gpu.bcnComputeFailed.load()};
+                std::shared_ptr<memory::StagingBuffer> stagingBuffer;
+                if (computeUpload && surfaceSize <= gpu.vkPhysicalDevice.getProperties().limits.maxStorageBufferRange) {
+                    try {
+                        stagingBuffer = gpu.memory.AllocateStagingBuffer(surfaceSize, true);
+                        bcnStorageUpload = true;
+                    } catch (const vk::DeviceLostError &) {
+                        throw;
+                    } catch (const std::exception &error) {
+                        LOGW("BCn storage upload allocation failed; using CPU decoding for this session: {}", error.what());
+                        gpu.bcnComputeFailed.store(true);
+                    }
+                }
+                if (!stagingBuffer) stagingBuffer = gpu.memory.AllocateStagingBuffer(surfaceSize);
                 bufferData = stagingBuffer->data();
                 return stagingBuffer;
             } else if (tiling == vk::ImageTiling::eLinear) {
@@ -407,10 +436,9 @@ namespace skyline::gpu {
             throw exception("Mipmapped textures with tiling mode '{}' aren't supported", static_cast<int>(tiling));
         }
 
-        if (!deswizzleBuffer.empty() && stagingBuffer && gpu.bcnComputeEnabled &&
+        if (!deswizzleBuffer.empty() && stagingBuffer && bcnStorageUpload && gpu.bcnComputeEnabled &&
             BcnComputeJob::Supports(guest->format->vkFormat)) {
-            bool failed;
-            { std::scoped_lock lock{gpu.bcnComputeMutex}; failed = gpu.bcnComputeFailed; }
+            bool failed{gpu.bcnComputeFailed.load()};
             if (!failed) {
                 try {
                     std::vector<BcnComputeLevel> levels;
@@ -425,19 +453,23 @@ namespace skyline::gpu {
                     }
                     if (outputOffset > stagingBuffer->size()) throw exception("BCn output exceeds upload buffer");
                     stagingBuffer->bcnComputeJob = std::make_shared<BcnComputeJob>(gpu, guest->format->vkFormat,
-                        span<const u8>{deswizzleBuffer.data(), deswizzleBuffer.size()}, levels);
+                        span<const u8>{deswizzleBuffer.data(), deswizzleBuffer.size()}, levels, stagingBuffer);
+                    traceNieRBcn("compute", gpu.nierBcComputeUploads);
                     return stagingBuffer;
                 } catch (const vk::DeviceLostError &) {
                     throw; // A lost device cannot be recovered by switching decoders.
+                } catch (const BcnComputeIneligible &) {
+                    // A limit or layout affects only this texture.
                 } catch (const std::exception &error) {
                     LOGW("BCn compute setup failed; using CPU decoding for this session: {}", error.what());
-                    std::scoped_lock lock{gpu.bcnComputeMutex};
-                    gpu.bcnComputeFailed = true;
+                    gpu.bcnComputeFailed.store(true);
                 }
             }
         }
 
         if (!deswizzleBuffer.empty()) {
+            const auto cpuStart{gpu.nierDiagnosticsEnabled ? std::chrono::steady_clock::now() :
+                std::chrono::steady_clock::time_point{}};
             // CPU BC1-BC7 decode can dominate upload time on Mali GPUs that
             // do not advertise native BCn formats. Record bounded samples
             // for NieR; only profile after a real device retest.
@@ -499,6 +531,11 @@ namespace skyline::gpu {
                 deswizzleOutput += level.linearSize * layerCount;
                 bufferData += level.targetLinearSize * layerCount;
             }
+            if (gpu.nierDiagnosticsEnabled)
+                traceNieRBcn("cpu", gpu.nierBcCpuUploads,
+                    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - cpuStart).count());
+        } else {
+            traceNieRBcn("native", gpu.nierBcNativeUploads);
         }
 
         return stagingBuffer;
@@ -555,7 +592,7 @@ namespace skyline::gpu {
             });
 
         if (stagingBuffer->bcnComputeJob)
-            stagingBuffer->bcnComputeJob->Record(commandBuffer, stagingBuffer->vkBuffer);
+            stagingBuffer->bcnComputeJob->Record(commandBuffer);
         auto bufferImageCopies{GetBufferImageCopies()};
         commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, layout, vk::ArrayProxy(static_cast<u32>(bufferImageCopies.size()), bufferImageCopies.data()));
     }
