@@ -433,6 +433,7 @@ namespace skyline::gpu {
         nierDiagnosticsEnabled = state.loader &&
             state.loader->programId == 0x0100B8E016F76000ULL &&
             traits.vendorId == 0x13B5U;
+        nierBcnTracingEnabled = nierDiagnosticsEnabled;
         if (nierDiagnosticsEnabled) {
             LOGI("NIER_MALI compatibility shader workarounds active");
             LOGI("NIER_BCN nativeSupport={} computeEnabled={} (native BCn is preferred)",

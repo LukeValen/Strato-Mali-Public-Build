@@ -68,6 +68,7 @@ namespace skyline::gpu {
         // diagnostic switch. Tracing is opt-in to avoid Vulkan readbacks, file
         // writes and draw-by-draw logging in normal gameplay.
         bool nierDiagnosticsEnabled{};
+        bool nierBcnTracingEnabled{}; //!< Bounded upload path counters for NieR on Mali
         bool nierCaptureEnabled{};
         std::atomic<u32> nierShaderSamples{};
         std::atomic<u32> nierBcDecodeSamples{};
