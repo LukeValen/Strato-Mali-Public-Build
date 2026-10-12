@@ -347,7 +347,7 @@ namespace skyline::gpu {
         // Lightweight path counts for NieR on Mali. A setting being on does
         // not imply a dispatch: native BCn textures bypass both decoders.
         const auto traceNieRBcn = [&](const char *path, std::atomic<u32> &counter, i64 cpuMicros = -1) {
-            if (!gpu.nierDiagnosticsEnabled || guest->format->vkFormat < vk::Format::eBc1RgbaUnormBlock ||
+            if (!gpu.nierBcnTracingEnabled || guest->format->vkFormat < vk::Format::eBc1RgbaUnormBlock ||
                 guest->format->vkFormat > vk::Format::eBc7SrgbBlock) return;
             const u32 count{counter.fetch_add(1, std::memory_order_relaxed) + 1};
             if (count <= 4 || (count % 128 == 0 && count <= 32768))
@@ -468,7 +468,7 @@ namespace skyline::gpu {
         }
 
         if (!deswizzleBuffer.empty()) {
-            const auto cpuStart{gpu.nierDiagnosticsEnabled ? std::chrono::steady_clock::now() :
+            const auto cpuStart{gpu.nierBcnTracingEnabled ? std::chrono::steady_clock::now() :
                 std::chrono::steady_clock::time_point{}};
             // CPU BC1-BC7 decode can dominate upload time on Mali GPUs that
             // do not advertise native BCn formats. Record bounded samples
@@ -531,7 +531,7 @@ namespace skyline::gpu {
                 deswizzleOutput += level.linearSize * layerCount;
                 bufferData += level.targetLinearSize * layerCount;
             }
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierBcnTracingEnabled)
                 traceNieRBcn("cpu", gpu.nierBcCpuUploads,
                     std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - cpuStart).count());
         } else {
