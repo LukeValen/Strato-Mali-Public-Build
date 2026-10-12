@@ -52,7 +52,7 @@ namespace skyline::gpu {
         const bool bcnComputeEnabled; //!< Snapshot at game launch
         std::mutex bcnComputeMutex;
         std::array<std::shared_ptr<BcnComputePipeline>, 3> bcnComputePipelines;
-        bool bcnComputeFailed{}; //!< Skip retries after a pre-recording setup failure
+        std::atomic<bool> bcnComputeFailed{}; //!< Skip retries after a pre-recording setup failure
 
         std::mutex queueMutex; //!< Synchronizes access to the queue as it is externally synchronized
         vk::raii::Queue vkQueue; //!< A Vulkan Queue supporting graphics and compute operations
@@ -71,6 +71,9 @@ namespace skyline::gpu {
         bool nierCaptureEnabled{};
         std::atomic<u32> nierShaderSamples{};
         std::atomic<u32> nierBcDecodeSamples{};
+        std::atomic<u32> nierBcNativeUploads{};
+        std::atomic<u32> nierBcComputeUploads{};
+        std::atomic<u32> nierBcCpuUploads{};
         // Bounded trace sampling, enabled only by exact NieR title + ARM vendor.
         std::atomic<u32> nierDrawCaptureSamples{};
         std::atomic<u32> nierComputeCaptureSamples{};

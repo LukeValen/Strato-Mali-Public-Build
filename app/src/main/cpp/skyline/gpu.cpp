@@ -424,7 +424,7 @@ namespace skyline::gpu {
           framebufferCache(*this),
           debugTracingBuffer(memory.AllocateBuffer(DebugTracingBufferSize)) {
         LOGI("Internal resolution scale: {}x (texture-cache scaling)", resolutionScale.Factor());
-        if (bcnComputeEnabled) LOGI("BCn compute decoding enabled (experimental; CPU fallback for unsupported uploads)");
+        if (bcnComputeEnabled) LOGI("BCn compute decoding available for formats without native BCn support (experimental)");
     }
 
     void GPU::Initialise() {
@@ -435,6 +435,8 @@ namespace skyline::gpu {
             traits.vendorId == 0x13B5U;
         if (nierDiagnosticsEnabled) {
             LOGI("NIER_MALI compatibility shader workarounds active");
+            LOGI("NIER_BCN nativeSupport={} computeEnabled={} (native BCn is preferred)",
+                 traits.bcnSupport.to_string(), bcnComputeEnabled);
             // Place this opt-in file in Android/data/<package>/files only when
             // investigating a regression. Default gameplay skips heavy tracing.
             std::error_code ec;
