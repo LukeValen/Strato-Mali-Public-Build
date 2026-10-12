@@ -41,7 +41,7 @@ private const val PREFERENCE_DIALOG_FRAGMENT_TAG = "androidx.preference.Preferen
 class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceDisplayDialogCallback {
     private var searchView: SearchView? = null
     private val sectionDescriptions = listOf(R.string.settings_graphics_summary, R.string.settings_gpu_summary,
-        R.string.settings_folders_summary, R.string.settings_drivers_summary, R.string.settings_general_summary)
+        R.string.settings_folders_summary, R.string.settings_drivers_summary, R.string.settings_general_summary, R.string.settings_bcn_summary)
 
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
     val hiddenCategoriesFromSearch = if (BuildConfig.BUILD_TYPE == "release") {
@@ -75,9 +75,9 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
         setSupportActionBar(binding.titlebar.toolbar)
         if (!intent.hasExtra(AppItemTag)) {
             supportActionBar?.title = getString(R.string.settings_hub_title)
-            val sections = listOf("graphics", "gpu", "folders", "drivers", "general")
+            val sections = listOf("graphics", "gpu", "folders", "drivers", "general", "bcn")
             val titles = listOf(R.string.settings_tab_graphics, R.string.settings_tab_gpu,
-                R.string.settings_tab_folders, R.string.settings_tab_drivers, R.string.settings_tab_general)
+                R.string.settings_tab_folders, R.string.settings_tab_drivers, R.string.settings_tab_general, R.string.settings_tab_bcn)
             val selected = savedInstanceState?.getInt("settings_tab", 0) ?: 0
             titles.forEachIndexed { index, title ->
                 binding.settingsTabs.addTab(binding.settingsTabs.newTab().setText(title), index == selected)
@@ -178,7 +178,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             override fun onQueryTextChange(newText : String) : Boolean {
                 val global = preferenceFragment as? GlobalSettingsFragment
                 if (global != null) {
-                    val sections = listOf("graphics", "gpu", "folders", "drivers", "general")
+                    val sections = listOf("graphics", "gpu", "folders", "drivers", "general", "bcn")
                     global.showSection(sections[binding.settingsTabs.selectedTabPosition.coerceAtLeast(0)], newText)
                     return true
                 }

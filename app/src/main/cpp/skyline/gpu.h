@@ -27,6 +27,7 @@
 #include "gpu/interconnect/kepler_compute/pipeline_manager.h"
 
 namespace skyline::gpu {
+    struct BcnComputePipeline;
     static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require
 
     /**
@@ -48,6 +49,11 @@ namespace skyline::gpu {
         u32 vkQueueFamilyIndex{};
         TraitManager traits;
         vk::raii::Device vkDevice;
+        const bool bcnComputeEnabled; //!< Snapshot at game launch
+        std::mutex bcnComputeMutex;
+        std::array<std::shared_ptr<BcnComputePipeline>, 3> bcnComputePipelines;
+        bool bcnComputeFailed{}; //!< Skip retries after a pre-recording setup failure
+
         std::mutex queueMutex; //!< Synchronizes access to the queue as it is externally synchronized
         vk::raii::Queue vkQueue; //!< A Vulkan Queue supporting graphics and compute operations
 

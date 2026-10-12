@@ -1,0 +1,178 @@
+#version 450
+/* Copyright (c) 2020-2024 Hans-Kristian Arntzen
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+#include "rgtc.h"
+#include "bitextract.h"
+
+layout(set = 0, binding = 0) writeonly buffer uOutputBlock {
+    uint[] data;
+} uOutput;
+
+layout(set = 0, binding = 1) readonly buffer uInputBlock {
+    uint[] data;
+} uInput;
+
+layout(push_constant) uniform Registers
+{
+    int format;
+    int width;
+    int height;
+    int depth;
+    int offset;
+    int bufferRowLength;
+    int bufferImageHeight;
+    int offsetX;
+    int offsetY;
+} registers;
+
+#define VK_FORMAT_BC1_RGB_UNORM_BLOCK 131
+#define VK_FORMAT_BC1_RGB_SRGB_BLOCK 132
+#define VK_FORMAT_BC1_RGBA_UNORM_BLOCK 133
+#define VK_FORMAT_BC1_RGBA_SRGB_BLOCK 134
+#define VK_FORMAT_BC2_UNORM_BLOCK 135
+#define VK_FORMAT_BC2_SRGB_BLOCK 136
+#define VK_FORMAT_BC3_UNORM_BLOCK 137
+#define VK_FORMAT_BC3_SRGB_BLOCK 138
+
+vec3 decode_endpoint_color(uint color)
+{
+    ivec3 c = ivec3(color) >> ivec3(11, 5, 0);
+    c &= ivec3(31, 63, 31);
+    return vec3(c) / vec3(31.0, 63.0, 31.0);
+}
+
+bool decode_endpoints_color(int format, uint payload, out vec3 ep0, out vec3 ep1)
+{
+    uint color0 = payload & 0xffffu;
+    uint color1 = payload >> 16u;
+    bool opaque_mode = (format > VK_FORMAT_BC1_RGBA_SRGB_BLOCK) || (color0 > color1);
+    ep0 = decode_endpoint_color(color0);
+    ep1 = decode_endpoint_color(color1);
+    return opaque_mode;
+}
+
+vec4 interpolate_endpoint_color(vec3 ep0, vec3 ep1, int bits, bool opaque_mode)
+{
+    vec4 res;
+    vec3 lerped;
+    if (opaque_mode)
+    {
+        if (bits < 2)
+            lerped = bits != 0 ? ep1 : ep0;
+        else
+            lerped = mix(ep0, ep1, (1.0 / 3.0) * float(bits - 1));
+        res = vec4(lerped, 1.0);
+    }
+    else
+    {
+        if (bits == 3)
+        {
+            res = vec4(0);
+        }
+        else
+        {
+            if (bits == 0)
+                lerped = ep0;
+            else if (bits == 1)
+                lerped = ep1;
+            else
+                lerped = 0.5 * (ep0 + ep1);
+            res = vec4(lerped, 1.0);
+        }
+    }
+
+    return res;
+}
+
+float decode_alpha_4bit(uvec2 payload, int pixel)
+{
+    uint offset = pixel * 4;
+    return float((payload[offset >> 5] >> (offset & 31)) & 0xf) / 15.0;
+}
+
+void main()
+{
+    int format = registers.format;
+    int width = registers.width;
+    int depth = registers.depth;
+    int height = registers.height;
+    int offset = registers.offset;
+    int bufferRowLength = registers.bufferRowLength;
+    int bufferImageHeight = registers.bufferImageHeight;
+    ivec3 resolution = ivec3(width, height, depth);
+
+    int x = int(gl_GlobalInvocationID.x);
+    int y = int(gl_GlobalInvocationID.y);
+    int z = int(gl_GlobalInvocationID.z);
+    ivec3 coord = ivec3(x, y, z);
+
+    if (any(greaterThanEqual(coord, resolution)))
+        return;
+
+    ivec3 tile_coord = ivec3(x / 4, y / 4, z);
+    ivec2 pixel_coord = coord.xy % 4;
+    int linear_pixel = 4 * pixel_coord.y + pixel_coord.x;
+
+    int rowExtent = max(bufferRowLength, width);
+    int sliceExtentY = max(bufferImageHeight, height);
+
+    int blocks_per_row = (rowExtent + 3) / 4;
+    int blocks_per_slice_y = (sliceExtentY + 3) / 4;
+    int blocks_per_slice = blocks_per_row * blocks_per_slice_y;
+    int block_index = (tile_coord.z * blocks_per_slice) + (tile_coord.y * blocks_per_row) + tile_coord.x;
+
+    uvec2 color_payload, alpha_payload;
+    vec3 ep0, ep1;
+    bool opaque_mode;
+    vec4 decoded;
+
+    if (format >= VK_FORMAT_BC1_RGB_UNORM_BLOCK && format <= VK_FORMAT_BC1_RGBA_SRGB_BLOCK) {
+        int block_offset = 2 * block_index;
+        color_payload = uvec2(uInput.data[block_offset + 0], uInput.data[block_offset + 1]);
+        opaque_mode = decode_endpoints_color(format, color_payload.x, ep0, ep1);
+        decoded = interpolate_endpoint_color(ep0, ep1, int((color_payload.y >> (2 * linear_pixel)) & 3), opaque_mode);
+        if (format == VK_FORMAT_BC1_RGB_UNORM_BLOCK || format == VK_FORMAT_BC1_RGB_SRGB_BLOCK)
+            decoded.a = 1;
+    }
+    else if (format >= VK_FORMAT_BC2_UNORM_BLOCK && format <= VK_FORMAT_BC2_SRGB_BLOCK) {
+        int block_offset = 4 * block_index;
+        color_payload = uvec2(uInput.data[block_offset + 2], uInput.data[block_offset + 3]);
+        alpha_payload = uvec2(uInput.data[block_offset + 0], uInput.data[block_offset + 1]);
+        opaque_mode = decode_endpoints_color(format, color_payload.x, ep0, ep1);
+        decoded = interpolate_endpoint_color(ep0, ep1, int((color_payload.y >> (2 * linear_pixel)) & 3), opaque_mode);
+        decoded.a = decode_alpha_4bit(alpha_payload, linear_pixel);
+    }
+    else {
+        int block_offset = 4 * block_index;
+        color_payload = uvec2(uInput.data[block_offset + 2], uInput.data[block_offset + 3]);
+        alpha_payload = uvec2(uInput.data[block_offset + 0], uInput.data[block_offset + 1]);
+        opaque_mode = decode_endpoints_color(format, color_payload.x, ep0, ep1);
+        decoded = interpolate_endpoint_color(ep0, ep1, int((color_payload.y >> (2 * linear_pixel)) & 3), opaque_mode);
+        decoded.a = decode_alpha_rgtc(alpha_payload, linear_pixel);
+    }
+
+    int pixel_index = (z * width * height) + (y * width) + x;
+    uOutput.data[pixel_index] = packUnorm4x8(decoded);
+}

@@ -74,10 +74,11 @@ namespace skyline::gpu::memory {
         vmaDestroyAllocator(vmaAllocator);
     }
 
-    std::shared_ptr<StagingBuffer> MemoryManager::AllocateStagingBuffer(vk::DeviceSize size) {
+    std::shared_ptr<StagingBuffer> MemoryManager::AllocateStagingBuffer(vk::DeviceSize size, bool storage) {
         vk::BufferCreateInfo bufferCreateInfo{
             .size = size,
-            .usage = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
+            .usage = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst |
+                     (storage ? vk::BufferUsageFlagBits::eStorageBuffer : vk::BufferUsageFlags{}),
             .sharingMode = vk::SharingMode::eExclusive,
             .queueFamilyIndexCount = 1,
             .pQueueFamilyIndices = &gpu.vkQueueFamilyIndex,

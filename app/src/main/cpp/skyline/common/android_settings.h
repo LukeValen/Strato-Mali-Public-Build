@@ -53,6 +53,7 @@ namespace skyline {
             disableSubgroupShuffle = ktSettings.GetBool("disableSubgroupShuffle");
             isAudioOutputDisabled = ktSettings.GetBool("isAudioOutputDisabled");
             logLevel = ktSettings.GetInt<skyline::AsyncLogger::LogLevel>("logLevel");
+            bcnGpuDecode = ktSettings.GetBool("bcnGpuDecode");
             validationLayer = ktSettings.GetBool("validationLayer");
         };
     };

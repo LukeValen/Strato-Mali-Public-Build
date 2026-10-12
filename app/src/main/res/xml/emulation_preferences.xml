@@ -202,5 +202,13 @@
             app:isPreferenceVisible="false"
             app:title="@string/validation_layer" />
     </PreferenceCategory>
+    <PreferenceCategory android:key="category_bcn" android:title="@string/settings_tab_bcn">
+        <org.stratoemu.strato.preference.RefreshSwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summary="@string/bcn_gpu_decode_summary"
+            app:key="bcn_gpu_decode"
+            app:title="@string/bcn_gpu_decode"
+            app:refreshRequired="true" />
+    </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
 

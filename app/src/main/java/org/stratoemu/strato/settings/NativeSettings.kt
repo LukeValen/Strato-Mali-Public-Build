@@ -47,7 +47,8 @@ data class NativeSettings(
     // Debug
     var logLevel : Int,
     var validationLayer : Boolean,
-    var resolutionScale : Int = 2
+    var resolutionScale : Int = 2,
+    var bcnGpuDecode : Boolean = false
 ) {
     constructor(context : Context, pref : EmulationSettings) : this(
         pref.isDocked,
@@ -72,7 +73,8 @@ data class NativeSettings(
         pref.disableSubgroupShuffle,
         pref.logLevel,
         BuildConfig.BUILD_TYPE != "release" && pref.validationLayer,
-        pref.resolutionScale
+        pref.resolutionScale,
+        pref.bcnGpuDecode
     )
 
     /**

@@ -12,6 +12,7 @@
 #include "layout.h"
 #include "adreno_aliasing.h"
 #include "bc_decoder.h"
+#include "bcn_compute.h"
 #include "format.h"
 
 namespace skyline::gpu {
@@ -406,6 +407,36 @@ namespace skyline::gpu {
             throw exception("Mipmapped textures with tiling mode '{}' aren't supported", static_cast<int>(tiling));
         }
 
+        if (!deswizzleBuffer.empty() && stagingBuffer && gpu.bcnComputeEnabled &&
+            BcnComputeJob::Supports(guest->format->vkFormat)) {
+            bool failed;
+            { std::scoped_lock lock{gpu.bcnComputeMutex}; failed = gpu.bcnComputeFailed; }
+            if (!failed) {
+                try {
+                    std::vector<BcnComputeLevel> levels;
+                    size_t inputOffset{}, outputOffset{};
+                    for (const auto &level : mipLayouts) {
+                        // Layers are separate slices, including mips shorter than one block.
+                        levels.push_back({level.dimensions.width, level.dimensions.height,
+                            level.dimensions.depth * layerCount, inputOffset, level.linearSize * layerCount,
+                            outputOffset, level.targetLinearSize * layerCount});
+                        inputOffset += level.linearSize * layerCount;
+                        outputOffset += level.targetLinearSize * layerCount;
+                    }
+                    if (outputOffset > stagingBuffer->size()) throw exception("BCn output exceeds upload buffer");
+                    stagingBuffer->bcnComputeJob = std::make_shared<BcnComputeJob>(gpu, guest->format->vkFormat,
+                        span<const u8>{deswizzleBuffer.data(), deswizzleBuffer.size()}, levels);
+                    return stagingBuffer;
+                } catch (const vk::DeviceLostError &) {
+                    throw; // A lost device cannot be recovered by switching decoders.
+                } catch (const std::exception &error) {
+                    LOGW("BCn compute setup failed; using CPU decoding for this session: {}", error.what());
+                    std::scoped_lock lock{gpu.bcnComputeMutex};
+                    gpu.bcnComputeFailed = true;
+                }
+            }
+        }
+
         if (!deswizzleBuffer.empty()) {
             // CPU BC1-BC7 decode can dominate upload time on Mali GPUs that
             // do not advertise native BCn formats. Record bounded samples
@@ -523,6 +554,8 @@ namespace skyline::gpu {
                 },
             });
 
+        if (stagingBuffer->bcnComputeJob)
+            stagingBuffer->bcnComputeJob->Record(commandBuffer, stagingBuffer->vkBuffer);
         auto bufferImageCopies{GetBufferImageCopies()};
         commandBuffer.copyBufferToImage(stagingBuffer->vkBuffer, image, layout, vk::ArrayProxy(static_cast<u32>(bufferImageCopies.size()), bufferImageCopies.data()));
     }

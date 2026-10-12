@@ -6,6 +6,8 @@
 #include <vk_mem_alloc.h>
 #include "fence_cycle.h"
 
+namespace skyline::gpu { class BcnComputeJob; }
+
 namespace skyline::gpu::memory {
     /**
      * @brief A view into a CPU mapping of a Vulkan buffer
@@ -42,6 +44,8 @@ namespace skyline::gpu::memory {
      */
     class StagingBuffer : public Buffer {
         using Buffer::Buffer;
+      public:
+        std::shared_ptr<BcnComputeJob> bcnComputeJob;
     };
 
     /**
@@ -129,7 +133,7 @@ namespace skyline::gpu::memory {
         /**
          * @brief Creates a buffer which is optimized for staging (Transfer Source)
          */
-        std::shared_ptr<StagingBuffer> AllocateStagingBuffer(vk::DeviceSize size);
+        std::shared_ptr<StagingBuffer> AllocateStagingBuffer(vk::DeviceSize size, bool storage = false);
 
         /**
          * @brief Creates a buffer with a CPU mapping and all usage flags

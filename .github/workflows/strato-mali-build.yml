@@ -122,6 +122,11 @@ jobs:
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 python3 tests/test_resolution_scaling.py
           python3 tests/test_resolution_vulkan.py
 
+      - name: Compare experimental BCn compute decoding with CPU
+        run: |
+          sudo apt-get update && sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
+          python3 tests/test_bcn_compute.py
+
       - name: Test software keyboard text encoding
         run: |
           python3 tests/test_keyboard_text.py

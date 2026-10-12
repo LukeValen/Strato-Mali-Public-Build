@@ -52,6 +52,7 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
             category.forEach { preference ->
                 val key = preference.key ?: ""
                 val owner = when {
+                    key == "bcn_gpu_decode" -> "bcn"
                     key == "gpu_driver" -> "drivers"
                     key in folderKeys -> "folders"
                     key in graphicsKeys -> "graphics"

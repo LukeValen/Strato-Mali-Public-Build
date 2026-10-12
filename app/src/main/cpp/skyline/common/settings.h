@@ -84,6 +84,8 @@ namespace skyline {
         Setting<bool> forceMaxGpuClocks; //!< If the GPU should be forced to run at maximum clocks
         Setting<bool> freeGuestTextureMemory; //!< If guest textrue memory should be freed when the owning texture is GPU dirty
 
+        Setting<bool> bcnGpuDecode; //!< Experimental compute decode; disabled by default
+
         // Hacks
         Setting<bool> enableFastGpuReadbackHack; //!< If the CPU texture readback skipping hack should be used
         Setting<bool> enableFastReadbackWrites; //!< If buffers should be treated as CPU dirty when written with the readback hack
