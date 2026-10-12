@@ -149,7 +149,7 @@ void main()
     vec4 decoded;
 
     if (format >= VK_FORMAT_BC1_RGB_UNORM_BLOCK && format <= VK_FORMAT_BC1_RGBA_SRGB_BLOCK) {
-        int block_offset = 2 * block_index;
+        int block_offset = offset + 2 * block_index;
         color_payload = uvec2(uInput.data[block_offset + 0], uInput.data[block_offset + 1]);
         opaque_mode = decode_endpoints_color(format, color_payload.x, ep0, ep1);
         decoded = interpolate_endpoint_color(ep0, ep1, int((color_payload.y >> (2 * linear_pixel)) & 3), opaque_mode);
@@ -157,7 +157,7 @@ void main()
             decoded.a = 1;
     }
     else if (format >= VK_FORMAT_BC2_UNORM_BLOCK && format <= VK_FORMAT_BC2_SRGB_BLOCK) {
-        int block_offset = 4 * block_index;
+        int block_offset = offset + 4 * block_index;
         color_payload = uvec2(uInput.data[block_offset + 2], uInput.data[block_offset + 3]);
         alpha_payload = uvec2(uInput.data[block_offset + 0], uInput.data[block_offset + 1]);
         opaque_mode = decode_endpoints_color(format, color_payload.x, ep0, ep1);
@@ -165,7 +165,7 @@ void main()
         decoded.a = decode_alpha_4bit(alpha_payload, linear_pixel);
     }
     else {
-        int block_offset = 4 * block_index;
+        int block_offset = offset + 4 * block_index;
         color_payload = uvec2(uInput.data[block_offset + 2], uInput.data[block_offset + 3]);
         alpha_payload = uvec2(uInput.data[block_offset + 0], uInput.data[block_offset + 1]);
         opaque_mode = decode_endpoints_color(format, color_payload.x, ep0, ep1);
@@ -173,6 +173,6 @@ void main()
         decoded.a = decode_alpha_rgtc(alpha_payload, linear_pixel);
     }
 
-    int pixel_index = (z * width * height) + (y * width) + x;
+    int pixel_index = registers.offsetX + (z * width * height) + (y * width) + x;
     uOutput.data[pixel_index] = packUnorm4x8(decoded);
 }

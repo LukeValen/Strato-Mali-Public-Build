@@ -716,7 +716,7 @@ void main() {
     int blocks_per_slice_y = (sliceExtentY + 3) / 4;
     int blocks_per_slice = blocks_per_row * blocks_per_slice_y;
     int block_index = (tile_coord.z * blocks_per_slice) + (tile_coord.y * blocks_per_row) + tile_coord.x;
-    int block_offset = 4 * block_index;
+    int block_offset = offset + 4 * block_index;
     uvec4 payload = uvec4(uInput.data[block_offset],
             uInput.data[block_offset + 1],
             uInput.data[block_offset + 2],
@@ -806,7 +806,7 @@ void main() {
         rgba_result = (rgba_result * 31) >> 6;
     }
 
-    int pixel_index = (z * width * height) + (y * width) + x;
+    int pixel_index = registers.offsetX + (z * width * height) + (y * width) + x;
     uint packed_rg = (uint(rgba_result.r) & 0xFFFFu) |
             (uint(rgba_result.g) & 0xFFFFu) << 16;
     uint packed_ba = (uint(rgba_result.b) & 0xFFFFu) |
