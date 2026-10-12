@@ -345,4 +345,5 @@
     <string name="game_content_installed">DLC/Update installed. It will be applied when you start the game.</string>
     <string name="game_content_already_installed">This content is already installed.</string>
     <string name="game_content_install_failed">Could not install DLC/Update</string>
+    <string name="mali_compatibility_accessibility">Compatibility: %1$s</string>
 </resources>

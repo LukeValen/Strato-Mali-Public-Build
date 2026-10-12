@@ -30,6 +30,22 @@
             tools:src="@drawable/default_icon" />
 
         <TextView
+            android:id="@+id/compatibility_badge"
+            style="@style/MaliCompatibilityBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="8dp"
+            android:textSize="9sp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:clickable="false"
+            android:focusable="false"
+            app:layout_constraintBottom_toBottomOf="@id/icon"
+            app:layout_constraintStart_toStartOf="@id/icon"
+            tools:text="Playable" />
+
+        <TextView
             android:id="@+id/text_title"
             style="?attr/textAppearanceTitleSmall"
             android:layout_width="0dp"
@@ -41,7 +57,8 @@
             android:textAlignment="viewStart"
             android:textColor="@android:color/white"
             app:layout_constrainedWidth="true"
-            app:layout_constraintBottom_toBottomOf="@id/icon"
+            android:layout_marginBottom="4dp"
+            app:layout_constraintBottom_toTopOf="@id/compatibility_badge"
             app:layout_constraintEnd_toEndOf="@id/icon"
             app:layout_constraintStart_toStartOf="@id/icon"
             tools:text="Title" />

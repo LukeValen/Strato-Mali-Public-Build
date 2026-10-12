@@ -19,14 +19,32 @@
         app:cardCornerRadius="20dp"
         app:strokeColor="@color/mali_cyan">
 
-        <ImageView
-            android:id="@+id/icon"
+        <!-- Status overlays the cover; the poster bitmap stays untouched. -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:adjustViewBounds="true"
-            android:contentDescription="@string/icon"
-            android:scaleType="centerCrop"
-            tools:src="@drawable/default_icon" />
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/icon"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:contentDescription="@string/icon"
+                android:scaleType="centerCrop"
+                tools:src="@drawable/default_icon" />
+
+            <TextView
+                android:id="@+id/compatibility_badge"
+                style="@style/MaliCompatibilityBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_marginStart="8dp"
+                android:layout_marginBottom="8dp"
+                android:clickable="false"
+                android:focusable="false"
+                tools:text="Perfect" />
+        </FrameLayout>
     </com.google.android.material.card.MaterialCardView>
 
     <TextView

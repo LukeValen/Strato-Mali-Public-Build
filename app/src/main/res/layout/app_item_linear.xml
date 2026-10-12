@@ -24,6 +24,23 @@
         tools:src="@drawable/default_icon" />
 
     <TextView
+        android:id="@+id/compatibility_badge"
+        style="@style/MaliCompatibilityBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="2dp"
+        android:textSize="8sp"
+        android:paddingStart="3dp"
+        android:paddingEnd="3dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:clickable="false"
+        android:focusable="false"
+        app:layout_constraintStart_toStartOf="@id/icon"
+        app:layout_constraintBottom_toBottomOf="@id/icon"
+        tools:text="Unknown" />
+
+    <TextView
         android:id="@+id/text_title"
         style="?attr/textAppearanceTitleMedium"
         android:layout_width="wrap_content"

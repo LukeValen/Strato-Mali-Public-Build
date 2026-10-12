@@ -86,6 +86,9 @@ jobs:
       - name: Validate Mali interface consistency and transparent icon
         run: python3 tests/test_mali_ui_consistency.py
 
+      - name: Validate curated library compatibility badges
+        run: python3 tests/test_game_compatibility.py
+
       - name: Validate Ko-fi welcome dialog and setup isolation
         run: python3 tests/test_kofi_startup.py
 

@@ -5,6 +5,15 @@
     <color name="colorPerfStatsPrimary">#B31E88FF</color>
     <color name="colorPerfStatsSecondary">#B300C8FF</color>
 
+    <!-- Library compatibility colors: curated statuses, not performance measurements. -->
+    <color name="compat_perfect">#00DE78</color>
+    <color name="compat_playable">#388960</color>
+    <color name="compat_ingame">#FFCF48</color>
+    <color name="compat_nothing">#D93448</color>
+    <color name="compat_unknown">#BAC1CC</color>
+    <color name="compat_text_dark">#10211B</color>
+    <color name="compat_text_light">#FFFFFF</color>
+
     <!-- Strato Mali: electric blueberry blue + cool cyan on deep graphite. -->
     <color name="seed">#1769FF</color>
     <color name="md_theme_light_primary">#0057E7</color>

@@ -8,6 +8,7 @@ package org.stratoemu.strato.adapter
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
+import android.content.res.ColorStateList
 import android.graphics.drawable.ColorDrawable
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +21,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.card.MaterialCardView
 import org.stratoemu.strato.R
 import org.stratoemu.strato.data.AppItem
+import org.stratoemu.strato.data.GameCompatibility
 import org.stratoemu.strato.databinding.AppItemGridBinding
 import org.stratoemu.strato.databinding.AppItemGridCompactBinding
 import org.stratoemu.strato.databinding.AppItemLinearBinding
@@ -50,6 +52,8 @@ interface LayoutBinding<V : ViewBinding> : ViewBinding {
     val textAuthor : TextView
 
     val icon : ImageView
+
+    val compatibilityBadge : TextView
 }
 
 class ListBinding(parent : ViewGroup) : LayoutBinding<AppItemLinearBinding> {
@@ -62,6 +66,8 @@ class ListBinding(parent : ViewGroup) : LayoutBinding<AppItemLinearBinding> {
     override val textAuthor = binding.textAuthor
 
     override val icon = binding.icon
+
+    override val compatibilityBadge = binding.compatibilityBadge
 }
 
 class GridBinding(parent : ViewGroup) : LayoutBinding<AppItemGridBinding> {
@@ -74,6 +80,8 @@ class GridBinding(parent : ViewGroup) : LayoutBinding<AppItemGridBinding> {
     override val textAuthor = binding.textAuthor
 
     override val icon = binding.icon
+
+    override val compatibilityBadge = binding.compatibilityBadge
 }
 
 class GridCompatBinding(parent : ViewGroup) : LayoutBinding<AppItemGridCompactBinding> {
@@ -86,6 +94,8 @@ class GridCompatBinding(parent : ViewGroup) : LayoutBinding<AppItemGridCompactBi
     override val textAuthor = binding.textAuthor
 
     override val icon = binding.icon
+
+    override val compatibilityBadge = binding.compatibilityBadge
 }
 
 private typealias InteractionFunction = (appItem : AppItem) -> Unit
@@ -105,6 +115,18 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
 
         binding.icon.setImageBitmap(item.bitmapIcon)
         binding.icon.contentDescription = item.title
+        // Every bind resets the label/color. RecyclerView reuses holders for
+        // different games when the library is scrolled, searched or sorted.
+        val compatibility = GameCompatibility.fromGame(item.titleId, item.title)
+        binding.compatibilityBadge.apply {
+            text = compatibility.label
+            backgroundTintList = ColorStateList.valueOf(
+                ContextCompat.getColor(context, compatibility.backgroundColor)
+            )
+            setTextColor(ContextCompat.getColor(context, compatibility.foregroundColor))
+            contentDescription = context.getString(R.string.mali_compatibility_accessibility, compatibility.label)
+        }
+
         if (layoutType != LayoutType.List) {
             binding.icon.scaleType = ImageView.ScaleType.CENTER_CROP
             val card = binding.root.findViewById<MaterialCardView>(R.id.item_card)
