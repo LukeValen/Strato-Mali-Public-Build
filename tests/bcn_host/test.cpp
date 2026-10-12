@@ -70,15 +70,15 @@ void CheckFormat(GPU &gpu, vk::Format format, std::mt19937 &random) {
             default: bcn::DecodeBc7(source,output,level.width,level.height); break;
         }
     }
-    auto output = gpu.memory.AllocateStagingBuffer(outputSize);
-    auto job = std::make_shared<BcnComputeJob>(gpu,format,span<const u8>{input},levels);
+    auto output = gpu.memory.AllocateStagingBuffer(outputSize, true);
+    auto job = std::make_shared<BcnComputeJob>(gpu,format,span<const u8>{input},levels,output);
     auto pool = gpu.vkDevice.createCommandPool(vk::CommandPoolCreateInfo{.queueFamilyIndex=gpu.vkQueueFamilyIndex});
     auto commands = gpu.vkDevice.allocateCommandBuffers(vk::CommandBufferAllocateInfo{.commandPool=*pool,.level=vk::CommandBufferLevel::ePrimary,.commandBufferCount=1});
     auto &command = commands.front();
     command.begin(vk::CommandBufferBeginInfo{});
-    job->Record(command,output->vkBuffer);
-    command.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,vk::PipelineStageFlagBits::eHost,{},
-        vk::MemoryBarrier{.srcAccessMask=vk::AccessFlagBits::eTransferWrite,.dstAccessMask=vk::AccessFlagBits::eHostRead},{},{});
+    job->Record(command);
+    command.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,vk::PipelineStageFlagBits::eHost,{},
+        vk::MemoryBarrier{.srcAccessMask=vk::AccessFlagBits::eShaderWrite,.dstAccessMask=vk::AccessFlagBits::eHostRead},{},{});
     command.end();
     vk::CommandBuffer raw = *command;
     auto queue = gpu.vkDevice.getQueue(gpu.vkQueueFamilyIndex,0);
@@ -103,9 +103,18 @@ int main() {
         if (BcnComputeJob::Supports(vk::Format::eBc4SnormBlock) || BcnComputeJob::Supports(vk::Format::eBc5UnormBlock)) return 2;
         std::vector<u8> input(8);
         bool rejected=false;
-        try { BcnComputeJob invalid(gpu,vk::Format::eBc1RgbaUnormBlock,span<const u8>{input},{{4,4,1,0,9,0,64}}); }
+        auto output = gpu.memory.AllocateStagingBuffer(64, true);
+        try { BcnComputeJob invalid(gpu,vk::Format::eBc1RgbaUnormBlock,span<const u8>{input},{{4,4,1,0,9,0,64}},output); }
         catch (const std::exception&) { rejected=true; }
         if (!rejected) return 3;
-        std::cout << "Invalid ranges rejected; RGTC stays on CPU\n";
+        rejected=false;
+        try { BcnComputeJob invalid(gpu,vk::Format::eBc1RgbaUnormBlock,span<const u8>{input},{{4,4,1,0,8,4,64}},output); }
+        catch (const BcnComputeIneligible&) { rejected=true; }
+        if (!rejected) return 4;
+        rejected=false;
+        try { BcnComputeJob invalid(gpu,vk::Format::eBc1RgbaUnormBlock,span<const u8>{input},{{4,4,1,0,8,1,64}},output); }
+        catch (const BcnComputeIneligible&) { rejected=true; }
+        if (!rejected) return 5;
+        std::cout << "Invalid input and output ranges rejected; RGTC stays on CPU\n";
     } catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 1; }
 }
