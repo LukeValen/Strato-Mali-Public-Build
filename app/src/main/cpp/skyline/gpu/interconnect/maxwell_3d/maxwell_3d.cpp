@@ -6,6 +6,7 @@
 #include <gpu/interconnect/conversion/quads.h>
 #include <gpu/interconnect/common/state_updater.h>
 #include <soc/gm20b/channel.h>
+#include <chrono>
 #include "common/utils.h"
 #include "maxwell_3d.h"
 #include "common.h"
@@ -427,6 +428,41 @@ namespace skyline::gpu::interconnect::maxwell3d {
         // AddSubpass may submit command buffers and invalidate the cached
         // active pipeline. Capture this before handing work to the executor.
         const bool hasStorageWrites{activeState.GetPipeline()->HasWritableStorageImages()};
+        TextureView *nierRtHdrView{}, *nierRtBrightView{}, *nierRtBlurView{};
+        if (ctx.gpu.nierDiagnosticsEnabled &&
+            std::chrono::steady_clock::now() - ctx.gpu.nierCaptureStart >= std::chrono::seconds{20}) {
+            const auto &hashes{activeState.GetPipeline()->GetShaderHashes()};
+            constexpr u64 BrightShader = 0xF4215778B3A6FB13ULL;
+            constexpr u64 BlurShader = 0x5739229BBF0DF100ULL;
+            const bool bright = std::find(hashes.begin(), hashes.end(), BrightShader) != hashes.end();
+            const bool blur = std::find(hashes.begin(), hashes.end(), BlurShader) != hashes.end();
+            if (bright) {
+                const auto colors{activeState.GetColorAttachments()};
+                if (colors.size() > 1 && colors[1] && colors[1]->texture->dimensions.width == 800 &&
+                    colors[1]->texture->dimensions.height == 450)
+                    nierRtBrightView = colors[1];
+                for (auto *view : activeDescriptorSetSampledImages) {
+                    if (view && view->texture->dimensions.width == 1920 &&
+                        view->texture->dimensions.height == 1080 &&
+                        view->texture->format->vkFormat == vk::Format::eB10G11R11UfloatPack32) {
+                        nierRtHdrView = view;
+                        break;
+                    }
+                }
+            }
+            if (blur) {
+                const auto colors{activeState.GetColorAttachments()};
+                for (auto *view : colors) {
+                    if (view && view->texture->dimensions.width <= 800 &&
+                        view->texture->dimensions.width >= 50 &&
+                        view->texture->dimensions.height <= 450 &&
+                        view->texture->format->vkFormat == vk::Format::eB10G11R11UfloatPack32) {
+                        nierRtBlurView = view;
+                        break;
+                    }
+                }
+            }
+        }
         ctx.executor.AddCheckpoint("Before draw");
         ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
             if (gpu.nierDiagnosticsEnabled) {
@@ -459,6 +495,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
             if (gpu.nierDiagnosticsEnabled)
                 gpu.nierRecordPhase.store(50, std::memory_order_relaxed); // draw callback complete
         }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility, srcStageMask, dstStageMask, activeState.GetPipeline()->supportsResolutionScaling && !transformFeedbackEnable);
+        // Capture candidates were resolved before AddSubpass, which may submit
+        // the executor and invalidate its cached active pipeline.
+        if (nierRtHdrView && !(ctx.gpu.nierRenderTargetCaptured.load() & 1U) &&
+            ctx.executor.CaptureNierRenderTarget(nierRtHdrView, "01_hdr_source", 0xF4215778B3A6FB13ULL, true))
+            ctx.gpu.nierRenderTargetCaptured.fetch_or(1U);
+        if (nierRtBrightView && !(ctx.gpu.nierRenderTargetCaptured.load() & 2U) &&
+            ctx.executor.CaptureNierRenderTarget(nierRtBrightView, "02_bright_pass", 0xF4215778B3A6FB13ULL, false))
+            ctx.gpu.nierRenderTargetCaptured.fetch_or(2U);
+        if (nierRtBlurView && !(ctx.gpu.nierRenderTargetCaptured.load() & 4U) &&
+            ctx.executor.CaptureNierRenderTarget(nierRtBlurView, "03_bloom_blur", 0x5739229BBF0DF100ULL, false))
+            ctx.gpu.nierRenderTargetCaptured.fetch_or(4U);
         ctx.executor.AddCheckpoint("After draw");
         // The decision was captured before AddSubpass/Submit could clear the
         // active pipeline. Never read the pipeline again after submission.

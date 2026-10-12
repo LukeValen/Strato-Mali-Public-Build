@@ -341,6 +341,10 @@ namespace skyline::gpu::interconnect {
          * @brief Inserts the input command into the node list after the current RP (or execution) finishes
          */
         void InsertPostRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
+        // One-off Vulkan image readback. Never changes the texture's tracked
+        // layout or guest bytes. Runs only for hardcoded NieR/Mali capture stages.
+        bool CaptureNierRenderTarget(TextureView *view, std::string label, u64 shaderHash, bool beforeRenderPass);
+
 
         /**
          * @brief Adds a full pipeline barrier to the command buffer

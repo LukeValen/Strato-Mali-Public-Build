@@ -80,6 +80,9 @@ namespace skyline::gpu {
 
         vk::ShaderModule CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings, u64 hash = 0);
 
+        // Valid only while the NieR/Mali capture experiment is active.
+        const std::filesystem::path &NierCapturePath() const { return nierCapturePath; }
+
         void ResetPools();
     };
 }

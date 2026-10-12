@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <fstream>
+#include <filesystem>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -557,6 +559,137 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::InsertPostRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
         slot->pendingPostRenderPassNodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), std::forward<decltype(function)>(function));
+    }
+
+    bool CommandExecutor::CaptureNierRenderTarget(TextureView *view, std::string label,
+                                                   u64 shaderHash, bool beforeRenderPass) {
+        if (!gpu.nierDiagnosticsEnabled || !view || !view->texture || !view->texture->guest)
+            return false;
+        auto texture = view->texture;
+        // The NieR postprocessing targets use 32-bit packed HDR color. Do not
+        // attempt to interpret compressed, multisampled, depth or sRGB images.
+        if (texture->format->vkFormat != vk::Format::eB10G11R11UfloatPack32 ||
+            texture->sampleCount != vk::SampleCountFlagBits::e1 ||
+            !(texture->usage & vk::ImageUsageFlagBits::eTransferSrc) ||
+            texture->layout == vk::ImageLayout::eUndefined ||
+            texture->dimensions.depth != 1 || !texture->GetBacking())
+            return false;
+        const auto width = texture->dimensions.width;
+        const auto height = texture->dimensions.height;
+        constexpr size_t MaxRawBytes = 16ULL * 1024ULL * 1024ULL;
+        const auto bytes = static_cast<size_t>(width) * height * 4;
+        if (!width || !height || bytes > MaxRawBytes || view->range.baseMipLevel != 0 ||
+            view->range.baseArrayLayer != 0 || view->range.layerCount != 1)
+            return false;
+        std::shared_ptr<memory::StagingBuffer> staging;
+        try {
+            staging = gpu.memory.AllocateStagingBuffer(bytes);
+        } catch (const std::exception &e) {
+            LOGW("NIER_RT_CAPTURE allocation skipped label={} reason={}", label, e.what());
+            return false;
+        }
+        // Retain the exact image and view until the render thread has submitted
+        // the command; never assume a subsequent texture-cache lookup matches.
+        const auto keepAlive = view->shared_from_this();
+        const vk::Image image = texture->GetBacking();
+        const vk::ImageLayout previousLayout = texture->layout;
+        const auto path = gpu.nierRenderTargetCaptureDir / (label + ".raw");
+        const auto metadata = gpu.nierRenderTargetCaptureDir / (label + ".txt");
+        const auto recorder = [this, keepAlive, staging, image, previousLayout, width, height,
+                               bytes, label, path, metadata, shaderHash]
+                              (vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &) {
+            // These copies execute outside the render pass. Transition the host
+            // image explicitly and restore the old layout before any next draw.
+            const vk::ImageSubresourceRange range{
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .baseMipLevel = 0, .levelCount = 1,
+                .baseArrayLayer = 0, .layerCount = 1,
+            };
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                                          vk::PipelineStageFlagBits::eTransfer, {}, {}, {},
+                                          vk::ImageMemoryBarrier{
+                                              .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
+                                              .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+                                              .oldLayout = previousLayout,
+                                              .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+                                              .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                              .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                              .image = image, .subresourceRange = range,
+                                          });
+            commandBuffer.copyImageToBuffer(image, vk::ImageLayout::eTransferSrcOptimal,
+                                            staging->vkBuffer,
+                                            vk::BufferImageCopy{
+                                                .bufferOffset = 0,
+                                                .bufferRowLength = 0,
+                                                .bufferImageHeight = 0,
+                                                .imageSubresource = {
+                                                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                                                    .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1,
+                                                },
+                                                .imageOffset = {0, 0, 0},
+                                                .imageExtent = {width, height, 1},
+                                            });
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                                          vk::PipelineStageFlagBits::eAllCommands, {}, {}, {},
+                                          vk::ImageMemoryBarrier{
+                                              .srcAccessMask = vk::AccessFlagBits::eTransferRead,
+                                              .dstAccessMask = vk::AccessFlagBits::eMemoryRead |
+                                                               vk::AccessFlagBits::eMemoryWrite,
+                                              .oldLayout = vk::ImageLayout::eTransferSrcOptimal,
+                                              .newLayout = previousLayout,
+                                              .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                              .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                              .image = image, .subresourceRange = range,
+                                          });
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                                          vk::PipelineStageFlagBits::eHost, {}, {},
+                                          vk::BufferMemoryBarrier{
+                                              .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                                              .dstAccessMask = vk::AccessFlagBits::eHostRead,
+                                              .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                              .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                              .buffer = staging->vkBuffer, .offset = 0, .size = bytes,
+                                          }, {});
+            // Waiter thread already tracks submission fences and keeps buffers
+            // alive until GPU completion. Never read mapped bytes before this.
+            waiterThread.Queue(cycle, [staging, keepAlive, width, height, bytes,
+                                       label, path, metadata, shaderHash] {
+                // CPU_ONLY staging memory is not guaranteed HOST_COHERENT.
+                const VkResult invalidate = vmaInvalidateAllocation(
+                    staging->vmaAllocator, staging->vmaAllocation, 0, bytes);
+                if (invalidate != VK_SUCCESS) {
+                    LOGW("NIER_RT_CAPTURE invalidate failed: label={} result={}",
+                         label, static_cast<int>(invalidate));
+                    return;
+                }
+                std::ofstream raw{path, std::ios::binary | std::ios::trunc};
+                if (!raw) {
+                    LOGW("NIER_RT_CAPTURE unable to open {}", path.string());
+                    return;
+                }
+                raw.write(reinterpret_cast<const char *>(staging->data()),
+                          static_cast<std::streamsize>(bytes));
+                raw.close();
+                if (!raw) {
+                    LOGW("NIER_RT_CAPTURE failed to save {}", path.string());
+                    return;
+                }
+                std::ofstream desc{metadata};
+                desc << "stage=" << label << "\nshaderHash=0x" << std::hex << shaderHash
+                     << std::dec << "\nwidth=" << width << "\nheight=" << height
+                     << "\nformat=VK_FORMAT_B10G11R11_UFLOAT_PACK32"
+                     << "\nbytesPerPixel=4\nrowOrder=top_to_bottom\n";
+                LOGI("NIER_RT_CAPTURE saved {} ({}x{} {} bytes hash=0x{:016X})",
+                     path.string(), width, height, bytes, shaderHash);
+            });
+        };
+        LOGI("NIER_RT_CAPTURE queued label={} size={}x{} bytes={} beforeRP={} hash=0x{:016X}",
+             label, width, height, bytes, beforeRenderPass, shaderHash);
+        if (beforeRenderPass)
+            InsertPreRpCommand(recorder);
+        else
+            InsertPostRpCommand(recorder);
+        return true;
     }
 
     void CommandExecutor::AddFullBarrier() {

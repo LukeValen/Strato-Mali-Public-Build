@@ -446,6 +446,12 @@ namespace skyline::gpu {
         shader.emplace(state, *this,
                        state.os->publicAppFilesPath + "shader_replacements/" + titleId,
                        state.os->publicAppFilesPath + "shader_dumps/" + titleId);
+        if (nierDiagnosticsEnabled) {
+            nierRenderTargetCaptureDir = shader->NierCapturePath();
+            nierCaptureStart = std::chrono::steady_clock::now();
+            LOGI("NIER_RT_CAPTURE armed; raw HDR/bright/blur snapshots after 20 seconds of gameplay, path={}",
+                 nierRenderTargetCaptureDir.string());
+        }
         if (!*state.settings->disableShaderCache)
             graphicsPipelineCacheManager.emplace(state,
                                                  state.os->publicAppFilesPath + "graphics_pipeline_cache/" + shaderCacheKey);

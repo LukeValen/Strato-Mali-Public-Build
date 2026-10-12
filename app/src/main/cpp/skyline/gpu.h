@@ -5,6 +5,8 @@
 
 #include <adrenotools/driver.h>
 #include <atomic>
+#include <chrono>
+#include <filesystem>
 #include <unordered_map>
 #include "gpu/trait_manager.h"
 #include "gpu/resolution_scaling.h"
@@ -62,6 +64,12 @@ namespace skyline::gpu {
         // Bounded trace sampling, enabled only by exact NieR title + ARM vendor.
         std::atomic<u32> nierDrawCaptureSamples{};
         std::atomic<u32> nierComputeCaptureSamples{};
+        // One-shot raw image copies for the NieR HDR -> bright-pass -> blur chain.
+        // Diagnostic only, never enabled for other games.
+        std::atomic<u32> nierRenderTargetCaptured{};
+        std::chrono::steady_clock::time_point nierCaptureStart{};
+        std::filesystem::path nierRenderTargetCaptureDir;
+
         // Crash breadcrumbs, touched only by the NieR command-recording thread.
         // A failing Mali vkCmd* may terminate before we can log the call.
         std::atomic<u32> nierRecordPhase{};      // 1=state, 2=draw, 3=post-draw
