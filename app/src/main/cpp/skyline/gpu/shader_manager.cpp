@@ -2,6 +2,8 @@
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <fstream>
+#include <ctime>
+#include <system_error>
 #include <range/v3/algorithm.hpp>
 #include <boost/functional/hash.hpp>
 #include <gpu.h>
@@ -31,6 +33,48 @@ namespace Shader::Log {
 }
 
 namespace skyline::gpu {
+    void ShaderManager::CaptureNierBinary(std::string_view name, span<u8> binary) {
+        // Shader dumping is intentionally best-effort. Never break gameplay
+        // because external storage is full, unavailable, or permission-restricted.
+        if (!gpu.nierDiagnosticsEnabled || binary.empty())
+            return;
+        constexpr u64 MaxBytes = 96ULL * 1024 * 1024;
+        constexpr u64 MaxFileBytes = 1024ULL * 1024;
+        constexpr u32 MaxFiles = 1600;
+        std::scoped_lock lock{dumpMutex};
+        if (!nierCaptureAvailable) return;
+        if (binary.size() > MaxFileBytes ||
+            nierCaptureBytes + binary.size() > MaxBytes ||
+            nierCaptureFileCount >= MaxFiles) {
+            if (!nierCaptureLimitReported) {
+                LOGW("NIER_CAPTURE quota reached: files={} bytes={} (max 1600 files/96 MiB, per-file 1 MiB)",
+                     nierCaptureFileCount, nierCaptureBytes);
+                nierCaptureLimitReported = true;
+            }
+            return;
+        }
+        const auto path{nierCapturePath / std::string{name}};
+        std::error_code ec;
+        if (std::filesystem::exists(path, ec)) return;
+        std::ofstream out{path, std::ios::binary | std::ios::trunc};
+        if (!out) {
+            nierCaptureAvailable = false;
+            LOGW("NIER_CAPTURE output unavailable at {}", path.parent_path().string());
+            return;
+        }
+        out.write(reinterpret_cast<const char *>(binary.data()),
+                  static_cast<std::streamsize>(binary.size()));
+        out.close();
+        if (!out) {
+            std::filesystem::remove(path, ec);
+            nierCaptureAvailable = false;
+            LOGW("NIER_CAPTURE write failed; capture stopped but game continues");
+            return;
+        }
+        nierCaptureBytes += binary.size();
+        ++nierCaptureFileCount;
+    }
+
     void ShaderManager::LoadShaderReplacements(std::string_view replacementDir) {
         std::filesystem::path replacementDirPath{replacementDir};
         if (std::filesystem::exists(replacementDirPath)) {
@@ -80,15 +124,33 @@ namespace skyline::gpu {
         // Never change the geometry compiler for games other than NieR on Mali.
         // Store false on each new game, including after returning from NieR.
         Shader::Settings::nier_mali_geometry_invocation_fix.store(gpu.nierDiagnosticsEnabled, std::memory_order_relaxed);
-        Shader::Settings::nier_mali_isberd_ab1.store(gpu.nierDiagnosticsEnabled, std::memory_order_relaxed);
-        if (gpu.nierDiagnosticsEnabled)
-            LOGI("NIER_AB1 shader experiment: Eden ISBERD operand and attribute handling enabled (NieR/Mali only)");
         if (gpu.nierDiagnosticsEnabled)
             LOGI("NIER_DIAG geometry InvocationInfo compatibility workaround enabled (Mali only)");
 
         if (gpu.kirbyDiagnosticsEnabled)
             LOGI("KIRBY_EXPERIMENT packed WScale 0x00FF0000 enabled (shader-only test; no driver changes)");
         LoadShaderReplacements(replacementDir);
+
+        if (gpu.nierDiagnosticsEnabled) {
+            // Use a new timestamped subfolder on every launch. The base shader
+            // dump directory remains unchanged for ordinary Skyline behavior.
+            nierCapturePath = dumpPath / fmt::format("nier_mali_capture_{}", std::time(nullptr));
+            std::error_code ec;
+            std::filesystem::create_directories(nierCapturePath, ec);
+            nierCaptureAvailable = !ec;
+            if (nierCaptureAvailable) {
+                LOGI("NIER_CAPTURE enabled at {} (96 MiB/1600 files; only NieR on Mali)",
+                     nierCapturePath.string());
+                std::ofstream manifest{nierCapturePath / "README.txt"};
+                manifest << "Strato Mali NieR/Mali graphics capture v1\n"
+                         << "Guest Maxwell shader binaries and generated Vulkan SPIR-V.\n"
+                         << "Corresponding draw/compute/render-target metadata is in emulation.log.\n"
+                         << "These binaries contain game shader code; share only for debugging.\n";
+            } else {
+                LOGW("NIER_CAPTURE disabled: unable to create folder {} error={}",
+                     nierCapturePath.string(), ec.message());
+            }
+        }
 
         if constexpr (DumpShaders) {
             if (!std::filesystem::exists(dumpPath))
@@ -410,6 +472,8 @@ namespace skyline::gpu {
                                                            bool viewportTransformEnabled,
                                                            const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType, bool enableResolutionScaling) {
         binary = ProcessShaderBinary(false, hash, binary);
+        if (gpu.nierDiagnosticsEnabled && hash)
+            CaptureNierBinary(fmt::format("guest_{:016X}.bin", hash), binary);
 
         std::scoped_lock lock{poolMutex};
 
@@ -442,6 +506,8 @@ namespace skyline::gpu {
                                                           std::array<u32, 3> workgroupDimensions,
                                                           const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
         binary = ProcessShaderBinary(false, hash, binary);
+        if (gpu.nierDiagnosticsEnabled && hash)
+            CaptureNierBinary(fmt::format("guest_{:016X}.bin", hash), binary);
 
         std::scoped_lock lock{poolMutex};
 
@@ -468,12 +534,29 @@ namespace skyline::gpu {
             ProcessShaderBinary(true, hash, span<u32>{spirvEmitted}.cast<u8>()).cast<u32>()};
 
         if (gpu.nierDiagnosticsEnabled) {
-            const auto sample = gpu.nierShaderSamples.fetch_add(1, std::memory_order_relaxed);
-            if (sample < 64 || (sample % 512 == 0 && sample < 32768))
-                LOGI("NIER_DIAG shader #{} stage={} hash=0x{:X} spirvWords={} geomPass={} images={} textures={}",
-                     sample, static_cast<u32>(program.stage), hash, spirv.size(),
-                     program.is_geometry_passthrough,
-                     program.info.image_descriptors.size(), program.info.texture_descriptors.size());
+            const u32 sample = gpu.nierShaderSamples.fetch_add(1, std::memory_order_relaxed);
+            const auto stage = static_cast<u32>(program.stage);
+            // Generated geometry helpers may have hash=0; use compilation index
+            // to prevent overwriting variants with different runtime state.
+            const auto name = fmt::format("spv_{:06}_{:016X}_s{}.spv", sample, hash, stage);
+            CaptureNierBinary(name, spirv.cast<u8>());
+            if (sample < 384 || (sample % 64 == 0 && sample < 32768)) {
+                u32 imageWrites{}, imageReads{};
+                for (const auto &desc : program.info.image_descriptors) {
+                    imageWrites += desc.is_written ? 1U : 0U;
+                    imageReads += desc.is_read ? 1U : 0U;
+                }
+                LOGI("NIER_CAPTURE shader sample={} hash=0x{:016X} stage={} spv={} words={} geometryPass={} vote={} shuffle={} mask={} lane={} fragCoord={} rescale={} derivatives={} imageReads={} imageWrites={} textures={} storageBuffers={} storageGlobals={}",
+                     sample, hash, stage, name, spirv.size(), program.is_geometry_passthrough,
+                     program.info.uses_subgroup_vote, program.info.uses_subgroup_shuffles,
+                     program.info.uses_subgroup_mask, program.info.uses_subgroup_invocation_id,
+                     program.info.loads[Shader::IR::Attribute::PositionX] ||
+                         program.info.loads[Shader::IR::Attribute::PositionY],
+                     program.info.uses_rescaling_uniform, program.info.uses_derivatives,
+                     imageReads, imageWrites, program.info.texture_descriptors.size(),
+                     program.info.storage_buffers_descriptors.size(),
+                     program.info.stores_global_memory);
+            }
         }
 
         vk::ShaderModuleCreateInfo createInfo{

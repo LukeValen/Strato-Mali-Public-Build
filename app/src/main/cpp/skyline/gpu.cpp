@@ -441,7 +441,7 @@ namespace skyline::gpu {
         std::string titleId{state.loader->nacp->GetSaveDataOwnerId()};
         // Never reuse native pipeline binaries from the unmodified compiler:
         // the Kirby experiment changes SPIR-V without changing guest hashes.
-        const std::string shaderCacheKey{titleId + (kirbyDiagnosticsEnabled ? "_kirby_wscale_ab1" : "") + (nierDiagnosticsEnabled ? "_nier_mali_geom_invocation_v1_isberd_ab1" : "")};
+        const std::string shaderCacheKey{titleId + (kirbyDiagnosticsEnabled ? "_kirby_wscale_ab1" : "") + (nierDiagnosticsEnabled ? "_nier_mali_geom_invocation_v1" : "")};
         graphicsPipelineAssembler.emplace(*this, state.os->publicAppFilesPath + "vk_graphics_pipeline_cache/" + shaderCacheKey);
         shader.emplace(state, *this,
                        state.os->publicAppFilesPath + "shader_replacements/" + titleId,

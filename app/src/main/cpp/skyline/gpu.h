@@ -59,6 +59,9 @@ namespace skyline::gpu {
         bool nierDiagnosticsEnabled{};
         std::atomic<u32> nierShaderSamples{};
         std::atomic<u32> nierBcDecodeSamples{};
+        // Bounded trace sampling, enabled only by exact NieR title + ARM vendor.
+        std::atomic<u32> nierDrawCaptureSamples{};
+        std::atomic<u32> nierComputeCaptureSamples{};
         // Crash breadcrumbs, touched only by the NieR command-recording thread.
         // A failing Mali vkCmd* may terminate before we can log the call.
         std::atomic<u32> nierRecordPhase{};      // 1=state, 2=draw, 3=post-draw

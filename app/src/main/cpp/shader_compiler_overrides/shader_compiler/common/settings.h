@@ -31,6 +31,4 @@ namespace Shader::Settings {
     inline std::atomic<bool> kirby_packed_wscale_test{false};
     // Game-specific compatibility setting. Never enabled for other titles.
     inline std::atomic<bool> nier_mali_geometry_invocation_fix{false};
-    // A/B experiment: accurate Maxwell ISBERD translation for NieR + Mali.
-    inline std::atomic<bool> nier_mali_isberd_ab1{false};
 }

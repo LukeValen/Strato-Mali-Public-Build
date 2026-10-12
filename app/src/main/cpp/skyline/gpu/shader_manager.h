@@ -34,6 +34,14 @@ namespace skyline::gpu {
         std::mutex poolMutex;
         std::filesystem::path dumpPath;
         std::mutex dumpMutex;
+        // Per-launch bounded shader capture (not the global Skyline DumpShaders switch).
+        std::filesystem::path nierCapturePath;
+        u64 nierCaptureBytes{};
+        u32 nierCaptureFileCount{};
+        bool nierCaptureAvailable{};
+        bool nierCaptureLimitReported{};
+        void CaptureNierBinary(std::string_view name, span<u8> binary);
+
 
         /**
          * @brief Called at init time to populate the shader replacements map from the input directory

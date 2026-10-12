@@ -382,6 +382,47 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
         }
 
+        // Correlate the guest shader hash with its input views and actual MRT
+        // targets. Only title 0100B8E016F76000 on ARM vendor 0x13B5.
+        if (ctx.gpu.nierDiagnosticsEnabled) {
+            const u32 sample = ctx.gpu.nierDrawCaptureSamples.fetch_add(1, std::memory_order_relaxed);
+            if (sample < 192 || (sample % 64 == 0 && sample < 32768)) {
+                const auto &hashes{activeState.GetPipeline()->GetShaderHashes()};
+                // Shader indices match guest Maxwell stages, not SPIR-V stage enum.
+                for (size_t stage{}; stage < hashes.size(); ++stage)
+                    if (hashes[stage])
+                        LOGI("NIER_CAPTURE draw={} shaderSlot={} hash=0x{:016X}",
+                             sample, stage, hashes[stage]);
+                const auto colors{activeState.GetColorAttachments()};
+                for (size_t slot{}; slot < colors.size(); ++slot) {
+                    auto *view{colors[slot]};
+                    if (!view) continue;
+                    const auto &tex{*view->texture};
+                    LOGI("NIER_CAPTURE draw={} colorRT={} fmt={} width={} height={} mip={} layer={} layout={} image={} ",
+                         sample, slot, static_cast<u32>(tex.format->vkFormat), tex.dimensions.width,
+                         tex.dimensions.height, view->range.baseMipLevel, view->range.baseArrayLayer,
+                         static_cast<u32>(tex.layout), fmt::ptr(&tex));
+                }
+                if (auto *depth{activeState.GetDepthAttachment()}) {
+                    const auto &tex{*depth->texture};
+                    LOGI("NIER_CAPTURE draw={} depthRT fmt={} width={} height={} image={}",
+                         sample, static_cast<u32>(tex.format->vkFormat), tex.dimensions.width,
+                         tex.dimensions.height, fmt::ptr(&tex));
+                }
+                for (size_t i{}; i < activeDescriptorSetSampledImages.size() && i < 16; ++i) {
+                    auto *view{activeDescriptorSetSampledImages[i]};
+                    if (!view) continue;
+                    const auto &tex{*view->texture};
+                    LOGI("NIER_CAPTURE draw={} sampled={} fmt={} width={} height={} image={}",
+                         sample, i, static_cast<u32>(tex.format->vkFormat), tex.dimensions.width,
+                         tex.dimensions.height, fmt::ptr(&tex));
+                }
+                LOGI("NIER_CAPTURE draw={} indexed={} count={} scissor={}x{} sampledCount={} ",
+                     sample, indexed, count, scissor.extent.width, scissor.extent.height,
+                     activeDescriptorSetSampledImages.size());
+            }
+        }
+
         constantBuffers.ResetQuickBind();
         // AddSubpass may submit command buffers and invalidate the cached
         // active pipeline. Capture this before handing work to the executor.

@@ -43,14 +43,6 @@ jobs:
           git -C app/libraries/shader-compiler apply "$GITHUB_WORKSPACE/experiments/nier-automata/geometry-invocation-info.patch"
           echo "Applied geometry input primitive vertex-count fix from Eden."
 
-      - name: Apply experimental NieR Mali ISBERD shader correction
-        shell: bash
-        run: |
-          set -euo pipefail
-          git -C app/libraries/shader-compiler apply --check "$GITHUB_WORKSPACE/experiments/nier-automata/isberd-nier-ab1.patch"
-          git -C app/libraries/shader-compiler apply "$GITHUB_WORKSPACE/experiments/nier-automata/isberd-nier-ab1.patch"
-          echo "Applied NieR-only ISBERD A/B shader translation experiment."
-
       - name: Test loader symbol lifetime and bounds (ASan/UBSan)
         run: python3 tests/test_loader_symbols.py
 
@@ -101,7 +93,7 @@ jobs:
         run: |
           python3 tests/test_nier_mali.py
           python3 tests/test_nier_draw_fault.py
-          python3 tests/test_nier_isberd_ab1.py
+          python3 tests/test_nier_capture.py
 
       - name: Validate Kirby-only GPU diagnostics
         run: python3 tests/test_kirby_diagnostics.py
