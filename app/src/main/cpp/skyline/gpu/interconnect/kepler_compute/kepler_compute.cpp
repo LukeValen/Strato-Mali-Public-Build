@@ -38,7 +38,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
         constantBuffers.Update(ctx, qmd);
         samplers.Update(ctx, qmd.samplerIndex == soc::gm20b::engine::kepler_compute::QMD::SamplerIndex::ViaHeaderIndex);
         auto *pipeline{pipelineState.Update(ctx, builder, textures, constantBuffers.boundConstantBuffers, qmd)};
-        if (ctx.gpu.nierDiagnosticsEnabled) {
+        if (ctx.gpu.nierCaptureEnabled) {
             const u32 sample = ctx.gpu.nierComputeCaptureSamples.fetch_add(1, std::memory_order_relaxed);
             if (sample < 192 || (sample % 64 == 0 && sample < 32768))
                 LOGI("NIER_CAPTURE dispatch={} shaderHash=0x{:016X} grid={}x{}x{} local={} shared={}",

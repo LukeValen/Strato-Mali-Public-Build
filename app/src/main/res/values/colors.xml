@@ -10,6 +10,7 @@
     <color name="compat_playable">#388960</color>
     <color name="compat_ingame">#FFCF48</color>
     <color name="compat_nothing">#D93448</color>
+    <color name="compat_unplayable">#DB344A</color>
     <color name="compat_unknown">#BAC1CC</color>
     <color name="compat_text_dark">#10211B</color>
     <color name="compat_text_light">#FFFFFF</color>

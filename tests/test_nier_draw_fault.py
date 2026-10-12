@@ -8,7 +8,7 @@ CPP = ROOT / "app/src/main/cpp/skyline"
 class RecordTraceTests(unittest.TestCase):
     def test_no_other_game_changes(self):
         state = (CPP / "gpu/interconnect/common/state_updater.h").read_text()
-        self.assertIn("if (!gpu.nierDiagnosticsEnabled)", state)
+        self.assertIn("if (!gpu.nierCaptureEnabled)", state)
         self.assertIn("cmd->record(gpu, commandBuffer, cmd);", state)
         self.assertIn("gpu.nierStateCommandIndex.store(++index", state)
 

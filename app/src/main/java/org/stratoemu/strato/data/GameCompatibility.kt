@@ -17,6 +17,7 @@ enum class GameCompatibility(
     Playable("Playable", R.color.compat_playable, R.color.compat_text_light),
     InGame("In-game", R.color.compat_ingame, R.color.compat_text_dark),
     Nothing("Nothing", R.color.compat_nothing, R.color.compat_text_light),
+    Unplayable("Unplayable", R.color.compat_unplayable, R.color.compat_text_light),
     Unknown("Unknown", R.color.compat_unknown, R.color.compat_text_dark);
 
     companion object {
@@ -28,8 +29,9 @@ enum class GameCompatibility(
             "01004B10157F2000" to Perfect,   // Persona 5 Royal (Asia)
             "0100B880154FC000" to Perfect,   // Persona 5 Royal (Japan)
             "010062B01525C000" to Playable,  // Persona 4 Golden
-            "0100B8E016F76000" to InGame,   // NieR:Automata
+            "0100B8E016F76000" to Playable,   // NieR:Automata
             "010003F003A34000" to Perfect,   // Pokémon Let's Go Pikachu
+            "01007EF00011E000" to Unplayable, // The Legend of Zelda: Breath of the Wild
         )
 
         // Only use an exact title match when the ROM could not supply a title
@@ -39,12 +41,15 @@ enum class GameCompatibility(
             "celeste" to Perfect,
             "persona 5 royal" to Perfect,
             "persona 4 golden" to Playable,
-            "nier:automata the end of yorha edition" to InGame,
-            "nier automata" to InGame,
+            "nier:automata the end of yorha edition" to Playable,
+            "nier automata" to Playable,
             "pokémon: let's go, pikachu!" to Perfect,
             "pokemon: let's go, pikachu!" to Perfect,
             "pokémon lets go pikachu" to Perfect,
             "pokemon lets go pikachu" to Perfect,
+            "the legend of zelda: breath of the wild" to Unplayable,
+            "the legend of zelda breath of the wild" to Unplayable,
+            "breath of the wild" to Unplayable,
         )
 
         fun fromGame(titleId: String?, title: String?): GameCompatibility {

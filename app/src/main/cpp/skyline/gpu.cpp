@@ -431,8 +431,16 @@ namespace skyline::gpu {
         nierDiagnosticsEnabled = state.loader &&
             state.loader->programId == 0x0100B8E016F76000ULL &&
             traits.vendorId == 0x13B5U;
-        if (nierDiagnosticsEnabled)
-            LOGI("NIER_DIAG Mali: enabled for title=0100B8E016F76000; track shader, BCn and command recording faults");
+        if (nierDiagnosticsEnabled) {
+            LOGI("NIER_MALI compatibility shader workarounds active");
+            // Place this opt-in file in Android/data/<package>/files only when
+            // investigating a regression. Default gameplay skips heavy tracing.
+            std::error_code ec;
+            nierCaptureEnabled = std::filesystem::exists(
+                state.os->publicAppFilesPath + "nier_gpu_capture.enable", ec) && !ec;
+            if (nierCaptureEnabled)
+                LOGI("NIER_CAPTURE diagnostics explicitly enabled by marker file");
+        }
         // Kirby and the Forgotten Land (base program, including its updates).
         // Enable bounded diagnostic traces without altering guest behavior.
         kirbyDiagnosticsEnabled = state.loader && state.loader->programId == 0x01004D300C5AE000ULL;
@@ -446,7 +454,7 @@ namespace skyline::gpu {
         shader.emplace(state, *this,
                        state.os->publicAppFilesPath + "shader_replacements/" + titleId,
                        state.os->publicAppFilesPath + "shader_dumps/" + titleId);
-        if (nierDiagnosticsEnabled) {
+        if (nierCaptureEnabled) {
             nierRenderTargetCaptureDir = shader->NierCapturePath();
             nierCaptureStart = std::chrono::steady_clock::now();
             LOGI("NIER_RT_CAPTURE armed; raw HDR/bright/blur snapshots after 20 seconds of gameplay, path={}",

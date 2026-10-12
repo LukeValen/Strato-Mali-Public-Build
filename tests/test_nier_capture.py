@@ -14,14 +14,14 @@ class NierCaptureTests(unittest.TestCase):
 
     def test_shader_dump_safety(self):
         manager = (SRC / "gpu/shader_manager.cpp").read_text()
-        self.assertIn("if (!gpu.nierDiagnosticsEnabled || binary.empty())", manager)
+        self.assertIn("if (!gpu.nierCaptureEnabled || binary.empty())", manager)
         self.assertIn("if (!nierCaptureAvailable) return;", manager)
         self.assertIn("96ULL * 1024 * 1024", manager)
         self.assertIn("MaxFiles = 1600", manager)
         self.assertIn("MaxFileBytes = 1024ULL * 1024", manager)
         self.assertIn('"nier_mali_capture_{}"', manager)
         self.assertIn('CaptureNierBinary(name, spirv.cast<u8>())', manager)
-        self.assertIn("gpu.nierDiagnosticsEnabled && hash", manager)
+        self.assertIn("gpu.nierCaptureEnabled && hash", manager)
         self.assertIn("if (DumpShaders)", manager)
         self.assertIn("nierCaptureAvailable = false", manager)
 
@@ -31,12 +31,12 @@ class NierCaptureTests(unittest.TestCase):
                      "uses_rescaling_uniform", "uses_derivatives", "imageReads", "imageWrites"):
             self.assertIn(flag, shader)
         draw = (SRC / "gpu/interconnect/maxwell_3d/maxwell_3d.cpp").read_text()
-        self.assertIn("if (ctx.gpu.nierDiagnosticsEnabled)", draw)
+        self.assertIn("if (ctx.gpu.nierCaptureEnabled)", draw)
         self.assertIn("NIER_CAPTURE draw={} shaderSlot={}", draw)
         self.assertIn("NIER_CAPTURE draw={} colorRT={}", draw)
         self.assertIn("NIER_CAPTURE draw={} sampled={}", draw)
         compute = (SRC / "gpu/interconnect/kepler_compute/kepler_compute.cpp").read_text()
-        self.assertIn("if (ctx.gpu.nierDiagnosticsEnabled)", compute)
+        self.assertIn("if (ctx.gpu.nierCaptureEnabled)", compute)
         self.assertIn("NIER_CAPTURE dispatch={}", compute)
 
     def test_does_not_restore_failed_isberd_patch(self):

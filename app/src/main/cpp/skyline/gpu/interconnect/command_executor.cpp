@@ -112,13 +112,13 @@ namespace skyline::gpu::interconnect {
         u32 subpassIndex;
 
         using namespace node;
-        if (gpu.nierDiagnosticsEnabled) {
+        if (gpu.nierCaptureEnabled) {
             currentExecutionTag = u64{slot->executionTag};
             currentNodeType = static_cast<size_t>(-1);
             currentNodeIndex = 0;
         }
         for (NodeVariant &node : slot->nodes) {
-            if (gpu.nierDiagnosticsEnabled) {
+            if (gpu.nierCaptureEnabled) {
                 currentNodeType = node.index();
                 ++currentNodeIndex;
             }
@@ -179,7 +179,7 @@ namespace skyline::gpu::interconnect {
             #undef NODE
         }
 
-        if (gpu.nierDiagnosticsEnabled)
+        if (gpu.nierCaptureEnabled)
             currentNodeType = static_cast<size_t>(-1);
         slot->commandBuffer.end();
         slot->ready = false;
@@ -229,7 +229,7 @@ namespace skyline::gpu::interconnect {
                 idle = true;
             }, [] {});
         } catch (const signal::SignalException &e) {
-            if (gpu.nierDiagnosticsEnabled) {
+            if (gpu.nierCaptureEnabled) {
                 LOGE("NIER_DIAG command-record fault: executionTag={} nodeIndex={} nodeVariant={} (4=SubpassFunction/draw)",
                      currentExecutionTag, currentNodeIndex, currentNodeType);
                 LOGE("NIER_DIAG draw fault: phase={} stateCmdIndex={} stateKind={} (phase 11=pipeline future, 12=bind pipeline, 30/31=direct draw, 32/33=indirect draw; kind 1=pipeline future, 2=pipeline, 3=descriptor, 4=vertex/index)",
@@ -563,7 +563,7 @@ namespace skyline::gpu::interconnect {
 
     bool CommandExecutor::CaptureNierRenderTarget(TextureView *view, std::string label,
                                                    u64 shaderHash, bool beforeRenderPass) {
-        if (!gpu.nierDiagnosticsEnabled || !view || !view->texture || !view->texture->guest)
+        if (!gpu.nierCaptureEnabled || !view || !view->texture || !view->texture->guest)
             return false;
         auto texture = view->texture;
         // The NieR postprocessing targets use 32-bit packed HDR color. Do not

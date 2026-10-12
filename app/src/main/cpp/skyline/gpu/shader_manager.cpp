@@ -37,7 +37,7 @@ namespace skyline::gpu {
     void ShaderManager::CaptureNierBinary(std::string_view name, span<u8> binary) {
         // Shader dumping is intentionally best-effort. Never break gameplay
         // because external storage is full, unavailable, or permission-restricted.
-        if (!gpu.nierDiagnosticsEnabled || binary.empty())
+        if (!gpu.nierCaptureEnabled || binary.empty())
             return;
         constexpr u64 MaxBytes = 96ULL * 1024 * 1024;
         constexpr u64 MaxFileBytes = 1024ULL * 1024;
@@ -132,7 +132,7 @@ namespace skyline::gpu {
             LOGI("KIRBY_EXPERIMENT packed WScale 0x00FF0000 enabled (shader-only test; no driver changes)");
         LoadShaderReplacements(replacementDir);
 
-        if (gpu.nierDiagnosticsEnabled) {
+        if (gpu.nierCaptureEnabled) {
             // Use a new timestamped subfolder on every launch. The base shader
             // dump directory remains unchanged for ordinary Skyline behavior.
             nierCapturePath = dumpPath / fmt::format("nier_mali_capture_{}", std::time(nullptr));
@@ -473,7 +473,7 @@ namespace skyline::gpu {
                                                            bool viewportTransformEnabled,
                                                            const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType, bool enableResolutionScaling) {
         binary = ProcessShaderBinary(false, hash, binary);
-        if (gpu.nierDiagnosticsEnabled && hash)
+        if (gpu.nierCaptureEnabled && hash)
             CaptureNierBinary(fmt::format("guest_{:016X}.bin", hash), binary);
 
         std::scoped_lock lock{poolMutex};
@@ -507,7 +507,7 @@ namespace skyline::gpu {
                                                           std::array<u32, 3> workgroupDimensions,
                                                           const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
         binary = ProcessShaderBinary(false, hash, binary);
-        if (gpu.nierDiagnosticsEnabled && hash)
+        if (gpu.nierCaptureEnabled && hash)
             CaptureNierBinary(fmt::format("guest_{:016X}.bin", hash), binary);
 
         std::scoped_lock lock{poolMutex};
@@ -550,7 +550,7 @@ namespace skyline::gpu {
             }
         }
 
-        if (gpu.nierDiagnosticsEnabled) {
+        if (gpu.nierCaptureEnabled) {
             const u32 sample = gpu.nierShaderSamples.fetch_add(1, std::memory_order_relaxed);
             const auto stage = static_cast<u32>(program.stage);
             // Generated geometry helpers may have hash=0; use compilation index

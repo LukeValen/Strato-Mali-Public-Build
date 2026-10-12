@@ -410,7 +410,7 @@ namespace skyline::gpu {
             // CPU BC1-BC7 decode can dominate upload time on Mali GPUs that
             // do not advertise native BCn formats. Record bounded samples
             // for NieR; only profile after a real device retest.
-            if (gpu.nierDiagnosticsEnabled) {
+            if (gpu.nierCaptureEnabled) {
                 const auto sample = gpu.nierBcDecodeSamples.fetch_add(1, std::memory_order_relaxed);
                 if (sample < 24 || (sample % 512 == 0 && sample < 32768))
                     LOGI("NIER_DIAG BCn fallback #{} guestFormat={} layers={} levels={} compressedBytes={} hostBytes={}",

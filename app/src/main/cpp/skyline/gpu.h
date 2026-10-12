@@ -58,7 +58,11 @@ namespace skyline::gpu {
         // Diagnostic-only instrumentation, gated by the exact Kirby title ID.
         // No runtime logging or shader changes for other titles.
         // NieR:Automata Mali diagnostic session. No changes to other games.
+        // Graphics workarounds remain enabled for NieR/Mali regardless of the
+        // diagnostic switch. Tracing is opt-in to avoid Vulkan readbacks, file
+        // writes and draw-by-draw logging in normal gameplay.
         bool nierDiagnosticsEnabled{};
+        bool nierCaptureEnabled{};
         std::atomic<u32> nierShaderSamples{};
         std::atomic<u32> nierBcDecodeSamples{};
         // Bounded trace sampling, enabled only by exact NieR title + ARM vendor.

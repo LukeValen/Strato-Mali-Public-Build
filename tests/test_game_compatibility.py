@@ -21,8 +21,9 @@ class CompatibilityTests(unittest.TestCase):
             "01004B10157F2000":"Perfect",
             "0100B880154FC000":"Perfect",
             "010062B01525C000":"Playable",
-            "0100B8E016F76000":"InGame",
+            "0100B8E016F76000":"Playable",
             "010003F003A34000":"Perfect",
+            "01007EF00011E000":"Unplayable",
         }.items():
             self.assertRegex(source, r'"'+title_id+r'"\s+to\s+'+rating)
         self.assertIn("return byTitleId[id] ?: Unknown",source)
@@ -49,7 +50,7 @@ class CompatibilityTests(unittest.TestCase):
     def test_palette_and_recycler_rebind(self):
         palette=ET.parse(RES/"values/colors.xml").getroot()
         colors={c.attrib["name"]:c.text for c in palette.findall("color")}
-        for name in ("perfect","playable","ingame","nothing","unknown"):
+        for name in ("perfect","playable","ingame","nothing","unplayable","unknown"):
             self.assertRegex(colors["compat_"+name],r"^#[0-9A-F]{6}$")
         adapter=(SRC/"adapter/AppViewItem.kt").read_text()
         self.assertEqual(adapter.count("override val compatibilityBadge = binding.compatibilityBadge"),3)

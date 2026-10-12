@@ -289,13 +289,13 @@ namespace skyline::gpu::interconnect {
 
     struct SetPipelineFutureCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(11, std::memory_order_relaxed); // waiting for pipeline future
             const auto &compiledPipeline = pipeline.get();
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(12, std::memory_order_relaxed); // vkCmdBindPipeline
             commandBuffer.bindPipeline(bindPoint, *compiledPipeline);
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(13, std::memory_order_relaxed); // vkCmdBindPipeline completed
         }
 
@@ -319,7 +319,7 @@ namespace skyline::gpu::interconnect {
          */
         void RecordAll(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) const {
             // Preserve the original hot path for every other title.
-            if (!gpu.nierDiagnosticsEnabled) {
+            if (!gpu.nierCaptureEnabled) {
                 for (StateUpdateCmdHeader *cmd{first}; cmd; cmd = cmd->next)
                     cmd->record(gpu, commandBuffer, cmd);
                 return;

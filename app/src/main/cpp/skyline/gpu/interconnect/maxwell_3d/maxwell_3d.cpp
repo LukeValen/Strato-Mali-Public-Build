@@ -385,7 +385,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         // Correlate the guest shader hash with its input views and actual MRT
         // targets. Only title 0100B8E016F76000 on ARM vendor 0x13B5.
-        if (ctx.gpu.nierDiagnosticsEnabled) {
+        if (ctx.gpu.nierCaptureEnabled) {
             const u32 sample = ctx.gpu.nierDrawCaptureSamples.fetch_add(1, std::memory_order_relaxed);
             if (sample < 192 || (sample % 64 == 0 && sample < 32768)) {
                 const auto &hashes{activeState.GetPipeline()->GetShaderHashes()};
@@ -429,7 +429,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         // active pipeline. Capture this before handing work to the executor.
         const bool hasStorageWrites{activeState.GetPipeline()->HasWritableStorageImages()};
         TextureView *nierRtHdrView{}, *nierRtBrightView{}, *nierRtBlurView{};
-        if (ctx.gpu.nierDiagnosticsEnabled &&
+        if (ctx.gpu.nierCaptureEnabled &&
             std::chrono::steady_clock::now() - ctx.gpu.nierCaptureStart >= std::chrono::seconds{20}) {
             const auto &hashes{activeState.GetPipeline()->GetShaderHashes()};
             constexpr u64 BrightShader = 0xF4215778B3A6FB13ULL;
@@ -465,34 +465,34 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
         ctx.executor.AddCheckpoint("Before draw");
         ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
-            if (gpu.nierDiagnosticsEnabled) {
+            if (gpu.nierCaptureEnabled) {
                 gpu.nierStateCommandIndex.store(0, std::memory_order_relaxed);
                 gpu.nierStateCommandKind.store(0, std::memory_order_relaxed);
                 gpu.nierRecordPhase.store(1, std::memory_order_relaxed); // entering state updater
             }
             drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(20, std::memory_order_relaxed); // state complete
 
             if (drawParams->transformFeedbackEnable) {
-                if (gpu.nierDiagnosticsEnabled) gpu.nierRecordPhase.store(21, std::memory_order_relaxed);
+                if (gpu.nierCaptureEnabled) gpu.nierRecordPhase.store(21, std::memory_order_relaxed);
                 commandBuffer.beginTransformFeedbackEXT(0, {}, {});
             }
 
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(drawParams->indexed ? 30 : 31, std::memory_order_relaxed); // vkCmdDrawIndexed / vkCmdDraw
             if (drawParams->indexed)
                 commandBuffer.drawIndexed(drawParams->count, drawParams->instanceCount, drawParams->first, static_cast<i32>(drawParams->vertexOffset), drawParams->firstInstance);
             else
                 commandBuffer.draw(drawParams->count, drawParams->instanceCount, drawParams->first, drawParams->firstInstance);
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(40, std::memory_order_relaxed); // vkCmdDraw completed
 
             if (drawParams->transformFeedbackEnable) {
-                if (gpu.nierDiagnosticsEnabled) gpu.nierRecordPhase.store(41, std::memory_order_relaxed);
+                if (gpu.nierCaptureEnabled) gpu.nierRecordPhase.store(41, std::memory_order_relaxed);
                 commandBuffer.endTransformFeedbackEXT(0, {}, {});
             }
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(50, std::memory_order_relaxed); // draw callback complete
         }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility, srcStageMask, dstStageMask, activeState.GetPipeline()->supportsResolutionScaling && !transformFeedbackEnable);
         // Capture candidates were resolved before AddSubpass, which may submit
@@ -560,37 +560,37 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         ctx.executor.AddCheckpoint("Before indirect draw");
         ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
-            if (gpu.nierDiagnosticsEnabled) {
+            if (gpu.nierCaptureEnabled) {
                 gpu.nierStateCommandIndex.store(0, std::memory_order_relaxed);
                 gpu.nierStateCommandKind.store(0, std::memory_order_relaxed);
                 gpu.nierRecordPhase.store(1, std::memory_order_relaxed);
             }
             drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(20, std::memory_order_relaxed);
 
             if (drawParams->transformFeedbackEnable) {
-                if (gpu.nierDiagnosticsEnabled) gpu.nierRecordPhase.store(21, std::memory_order_relaxed);
+                if (gpu.nierCaptureEnabled) gpu.nierRecordPhase.store(21, std::memory_order_relaxed);
                 commandBuffer.beginTransformFeedbackEXT(0, {}, {});
             }
 
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(25, std::memory_order_relaxed); // resolving indirect buffer binding
             auto indirectBinding{drawParams->indirectBuffer.GetBinding(gpu)};
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(drawParams->indexed ? 32 : 33, std::memory_order_relaxed);
             if (drawParams->indexed)
                 commandBuffer.drawIndexedIndirect(indirectBinding.buffer, indirectBinding.offset, drawParams->count, drawParams->stride);
             else
                 commandBuffer.drawIndirect(indirectBinding.buffer,  indirectBinding.offset, drawParams->count, drawParams->stride);
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(40, std::memory_order_relaxed);
 
             if (drawParams->transformFeedbackEnable) {
-                if (gpu.nierDiagnosticsEnabled) gpu.nierRecordPhase.store(41, std::memory_order_relaxed);
+                if (gpu.nierCaptureEnabled) gpu.nierRecordPhase.store(41, std::memory_order_relaxed);
                 commandBuffer.endTransformFeedbackEXT(0, {}, {});
             }
-            if (gpu.nierDiagnosticsEnabled)
+            if (gpu.nierCaptureEnabled)
                 gpu.nierRecordPhase.store(50, std::memory_order_relaxed);
         }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility, srcStageMask, dstStageMask, activeState.GetPipeline()->supportsResolutionScaling && !transformFeedbackEnable);
         ctx.executor.AddCheckpoint("After indirect draw");

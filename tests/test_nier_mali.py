@@ -49,7 +49,7 @@ class NierGpuTests(unittest.TestCase):
         header = (SRC / "gpu/interconnect/command_executor.h").read_text()
         self.assertIn("currentNodeType = node.index()", record)
         self.assertIn("NIER_DIAG command-record fault", record)
-        self.assertIn('if (gpu.nierDiagnosticsEnabled) {\n                currentNodeType = node.index();', record)
+        self.assertIn('if (gpu.nierCaptureEnabled) {\n                currentNodeType = node.index();', record)
         self.assertIn("currentNodeIndex{}", header)
         self.assertIn("NIER_DIAG BCn fallback", (SRC / "gpu/texture/texture.cpp").read_text())
         self.assertIn("NIER_CAPTURE shader", (SRC / "gpu/shader_manager.cpp").read_text())

@@ -13,7 +13,7 @@ class Capture(unittest.TestCase):
         d=(S/"gpu/interconnect/maxwell_3d/maxwell_3d.cpp").read_text()
         for phrase in ("0xF4215778B3A6FB13ULL","0x5739229BBF0DF100ULL",
                        "01_hdr_source","02_bright_pass","03_bloom_blur",
-                       "nierDiagnosticsEnabled","std::chrono::seconds{20}"):
+                       "nierCaptureEnabled","std::chrono::seconds{20}"):
             self.assertIn(phrase,d)
     def test_safe_vk_layout_and_fence_readback(self):
         e=(S/"gpu/interconnect/command_executor.cpp").read_text()
