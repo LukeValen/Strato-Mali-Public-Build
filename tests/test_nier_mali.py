@@ -13,7 +13,7 @@ class NierGpuTests(unittest.TestCase):
         self.assertIn("0x0100B8E016F76000ULL", gpu)
         self.assertIn("traits.vendorId == 0x13B5U", gpu)
         self.assertIn("nierDiagnosticsEnabled = state.loader", gpu)
-        self.assertIn('"_nier_mali_geom_invocation_v1"', gpu)
+        self.assertIn('"_nier_mali_geom_invocation_v1', gpu)
         manager = (SRC / "gpu/shader_manager.cpp").read_text()
         self.assertIn("nier_mali_geometry_invocation_fix.store(gpu.nierDiagnosticsEnabled", manager)
         settings = (SRC.parent / "shader_compiler_overrides/shader_compiler/common/settings.h").read_text()

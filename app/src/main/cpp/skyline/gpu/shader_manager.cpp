@@ -80,6 +80,9 @@ namespace skyline::gpu {
         // Never change the geometry compiler for games other than NieR on Mali.
         // Store false on each new game, including after returning from NieR.
         Shader::Settings::nier_mali_geometry_invocation_fix.store(gpu.nierDiagnosticsEnabled, std::memory_order_relaxed);
+        Shader::Settings::nier_mali_isberd_ab1.store(gpu.nierDiagnosticsEnabled, std::memory_order_relaxed);
+        if (gpu.nierDiagnosticsEnabled)
+            LOGI("NIER_AB1 shader experiment: Eden ISBERD operand and attribute handling enabled (NieR/Mali only)");
         if (gpu.nierDiagnosticsEnabled)
             LOGI("NIER_DIAG geometry InvocationInfo compatibility workaround enabled (Mali only)");
 
