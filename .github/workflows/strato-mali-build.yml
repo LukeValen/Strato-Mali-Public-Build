@@ -90,7 +90,9 @@ jobs:
         run: python3 tests/test_kofi_startup.py
 
       - name: Validate NieR geometry and Mali diagnostic isolation
-        run: python3 tests/test_nier_mali.py
+        run: |
+          python3 tests/test_nier_mali.py
+          python3 tests/test_nier_draw_fault.py
 
       - name: Validate Kirby-only GPU diagnostics
         run: python3 tests/test_kirby_diagnostics.py

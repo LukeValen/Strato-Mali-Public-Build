@@ -289,7 +289,14 @@ namespace skyline::gpu::interconnect {
 
     struct SetPipelineFutureCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
-            commandBuffer.bindPipeline(bindPoint, *pipeline.get());
+            if (gpu.nierDiagnosticsEnabled)
+                gpu.nierRecordPhase.store(11, std::memory_order_relaxed); // waiting for pipeline future
+            const auto &compiledPipeline = pipeline.get();
+            if (gpu.nierDiagnosticsEnabled)
+                gpu.nierRecordPhase.store(12, std::memory_order_relaxed); // vkCmdBindPipeline
+            commandBuffer.bindPipeline(bindPoint, *compiledPipeline);
+            if (gpu.nierDiagnosticsEnabled)
+                gpu.nierRecordPhase.store(13, std::memory_order_relaxed); // vkCmdBindPipeline completed
         }
 
         std::shared_future<vk::raii::Pipeline> pipeline;
@@ -311,8 +318,29 @@ namespace skyline::gpu::interconnect {
          * @brief Records all contained state updates into the given command buffer
          */
         void RecordAll(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) const {
-            for (StateUpdateCmdHeader *cmd{first}; cmd; cmd = cmd->next)
+            // Preserve the original hot path for every other title.
+            if (!gpu.nierDiagnosticsEnabled) {
+                for (StateUpdateCmdHeader *cmd{first}; cmd; cmd = cmd->next)
+                    cmd->record(gpu, commandBuffer, cmd);
+                return;
+            }
+
+            u32 index{};
+            for (StateUpdateCmdHeader *cmd{first}; cmd; cmd = cmd->next) {
+                gpu.nierStateCommandIndex.store(++index, std::memory_order_relaxed);
+                const u32 kind =
+                    cmd->record == &SetPipelineFutureCmd::Record ? 1U :
+                    cmd->record == &SetPipelineCmd::Record ? 2U :
+                    cmd->record == &SetDescriptorSetWithUpdateCmd::Record ||
+                    cmd->record == &SetDescriptorSetWithPushCmd::Record ? 3U :
+                    cmd->record == &SetVertexBuffersDynamicCmd::Record ||
+                    cmd->record == &SetVertexBuffersCmd::Record ||
+                    cmd->record == &SetIndexBufferDynamicCmd::Record ||
+                    cmd->record == &SetIndexBufferCmd::Record ? 4U : 0U;
+                gpu.nierStateCommandKind.store(kind, std::memory_order_relaxed);
+                gpu.nierRecordPhase.store(1, std::memory_order_relaxed);
                 cmd->record(gpu, commandBuffer, cmd);
+            }
         }
     };
 

@@ -227,9 +227,14 @@ namespace skyline::gpu::interconnect {
                 idle = true;
             }, [] {});
         } catch (const signal::SignalException &e) {
-            if (gpu.nierDiagnosticsEnabled)
-                LOGE("NIER_DIAG command-record fault: executionTag={} nodeIndex={} nodeVariant={} (invalid variant means outside node dispatch)",
+            if (gpu.nierDiagnosticsEnabled) {
+                LOGE("NIER_DIAG command-record fault: executionTag={} nodeIndex={} nodeVariant={} (4=SubpassFunction/draw)",
                      currentExecutionTag, currentNodeIndex, currentNodeType);
+                LOGE("NIER_DIAG draw fault: phase={} stateCmdIndex={} stateKind={} (phase 11=pipeline future, 12=bind pipeline, 30/31=direct draw, 32/33=indirect draw; kind 1=pipeline future, 2=pipeline, 3=descriptor, 4=vertex/index)",
+                     gpu.nierRecordPhase.load(std::memory_order_relaxed),
+                     gpu.nierStateCommandIndex.load(std::memory_order_relaxed),
+                     gpu.nierStateCommandKind.load(std::memory_order_relaxed));
+            }
             LOGE("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
             if (state.process)
                 state.process->Kill(false);

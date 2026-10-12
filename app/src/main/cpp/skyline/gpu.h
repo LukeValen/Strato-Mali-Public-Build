@@ -59,6 +59,11 @@ namespace skyline::gpu {
         bool nierDiagnosticsEnabled{};
         std::atomic<u32> nierShaderSamples{};
         std::atomic<u32> nierBcDecodeSamples{};
+        // Crash breadcrumbs, touched only by the NieR command-recording thread.
+        // A failing Mali vkCmd* may terminate before we can log the call.
+        std::atomic<u32> nierRecordPhase{};      // 1=state, 2=draw, 3=post-draw
+        std::atomic<u32> nierStateCommandIndex{}; // 1-based index within the draw
+        std::atomic<u32> nierStateCommandKind{};  // 1=pipeline future, 2=pipeline, 3=descriptors, 4=vertex/index, 0=other
         bool kirbyDiagnosticsEnabled{};
         std::atomic<u32> kirbyHandleSamples{};
         std::atomic<u32> kirbyMissingCbufSamples{};
