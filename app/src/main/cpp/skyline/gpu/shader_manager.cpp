@@ -15,6 +15,7 @@
 #include <vulkan/vulkan_raii.hpp>
 #include "shader_manager.h"
 #include <gpu/resolution_shader.h>
+#include <gpu/nier_bloom_ab1.h>
 
 static constexpr bool DumpShaders{false};
 
@@ -532,6 +533,22 @@ namespace skyline::gpu {
         auto spirvEmitted{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
         auto spirv{program.info.uses_rescaling_uniform ? span<u32>{spirvEmitted} :
             ProcessShaderBinary(true, hash, span<u32>{spirvEmitted}.cast<u8>()).cast<u32>()};
+
+        // Experimental NieR-only A/B for colored bloom orbs on ARM Mali.
+        // The guest's primary HDR color attachment (location 0) is untouched.
+        // A strict SPIR-V guard refuses all unexpected layouts, rather than
+        // attempting to rewrite arbitrary shaders.
+        std::vector<u32> nierBloomPatched;
+        if (gpu.nierDiagnosticsEnabled && hash == 0xF4215778B3A6FB13ULL &&
+            program.stage == Shader::Stage::Fragment) {
+            nierBloomPatched.assign(spirv.begin(), spirv.end());
+            if (nier_bloom::SuppressBrightPass(nierBloomPatched)) {
+                spirv = span<u32>{nierBloomPatched};
+                LOGW("NIER_BLOOM_AB1 bright-pass suppressed: hash=0x{:016X} RT1=black (primary HDR/RT0 unchanged)", hash);
+            } else {
+                LOGW("NIER_BLOOM_AB1 skipped: bright-pass SPIR-V structure unexpected, original shader kept hash=0x{:016X}", hash);
+            }
+        }
 
         if (gpu.nierDiagnosticsEnabled) {
             const u32 sample = gpu.nierShaderSamples.fetch_add(1, std::memory_order_relaxed);
