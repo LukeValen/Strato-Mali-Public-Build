@@ -13,16 +13,19 @@ BC4/BC5 retain CPU decoding because their R8/RG8 and signed packing paths need s
 ASTC/ETC2 transcoding is not included: this version accelerates decompression and still stores
 uncompressed host textures, so it does not claim the compressed-memory savings of Winlator's transcoder.
 
-Each mip has separate compressed input and storage output buffers, avoiding descriptor-offset
-alignment and sub-block layer-stride issues. Input mappings are flushed before dispatch.
-Compute-write → transfer-read and transfer-write → transfer-read barriers precede the normal image upload.
+One compressed input buffer and the final upload buffer serve all mips. Shader push constants
+select byte-aligned mip offsets, so there are no per-mip buffers, descriptors or intermediate
+buffer copies. Input mappings are flushed before dispatch. A compute-write → transfer-read
+barrier precedes the normal image upload.
 Jobs, descriptors, buffers and cached pipelines remain alive with the staging buffer's FenceCycle.
 Inline uploads precede guest command nodes in CommandExecutor::SubmitInternal, so the decoder's
 compute bindings are overwritten by subsequent guest commands.
 No queue submit, fence reset, queue-idle call, CPU wait, or driver-loader change is added.
 
-Invalid dimensions, buffer limits, absent compute queues and allocation/pipeline setup errors
-fall back to CPU before command recording and suppress repeated setup attempts for the session.
+Invalid dimensions or per-texture buffer limits fall back to CPU for that texture.
+Absent compute queues and allocation/pipeline setup errors fall back before command recording
+and suppress repeated setup attempts for the session. A storage-buffer allocation failure
+also falls back to an ordinary upload buffer.
 Device loss is propagated rather than misrepresented as a recoverable decoder failure.
 A runtime GPU error after recording cannot safely be recovered by re-running the CPU decoder.
 
@@ -36,7 +39,10 @@ mips with different layer counts. An invalid source range is rejected before GPU
 
 The Android APK and Mali device validation remain pending. No FPS or memory improvement is claimed.
 On-device A/B checks should compare the same scene at the same resolution/driver with the setting
-off/on, inspect emulation logs, verify textures and restart the game between changes.
+off/on, inspect emulation logs, verify textures and restart the game between changes. For NieR on
+Mali, `NIER_BCN` logs the native support mask and bounded counts for `native`, `compute` and
+`cpu` uploads; `cpuDecodeUs` measures only CPU decoding. If the driver advertises native BCn,
+the compute setting does not replace native textures and may have no impact on FPS.
 
 ## Shader provenance
 
