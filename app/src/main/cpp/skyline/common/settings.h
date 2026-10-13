@@ -85,6 +85,7 @@ namespace skyline {
         Setting<bool> freeGuestTextureMemory; //!< If guest textrue memory should be freed when the owning texture is GPU dirty
 
         Setting<bool> bcnGpuDecode; //!< Experimental compute decode; disabled by default
+        Setting<bool> bcnShaderCache; //!< Persist BCn compute pipelines for this Vulkan driver
 
         // Hacks
         Setting<bool> enableFastGpuReadbackHack; //!< If the CPU texture readback skipping hack should be used

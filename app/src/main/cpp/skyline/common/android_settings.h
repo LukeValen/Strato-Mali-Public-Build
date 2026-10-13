@@ -54,6 +54,7 @@ namespace skyline {
             isAudioOutputDisabled = ktSettings.GetBool("isAudioOutputDisabled");
             logLevel = ktSettings.GetInt<skyline::AsyncLogger::LogLevel>("logLevel");
             bcnGpuDecode = ktSettings.GetBool("bcnGpuDecode");
+            bcnShaderCache = ktSettings.GetBool("bcnShaderCache");
             validationLayer = ktSettings.GetBool("validationLayer");
         };
     };
