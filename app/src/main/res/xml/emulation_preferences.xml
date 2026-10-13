@@ -209,6 +209,12 @@
             app:key="bcn_gpu_decode"
             app:title="@string/bcn_gpu_decode"
             app:refreshRequired="true" />
+        <org.stratoemu.strato.preference.RefreshSwitchPreferenceCompat
+            android:defaultValue="true"
+            android:summary="@string/bcn_shader_cache_summary"
+            app:key="bcn_shader_cache"
+            app:title="@string/bcn_shader_cache"
+            app:refreshRequired="true" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
 
