@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static regression tests for manual Strato Mali compatibility badges."""
+"""Regression checks for the site-backed compatibility badges and report action."""
 from pathlib import Path
 import re
 import unittest
@@ -13,23 +13,17 @@ ANDROID="{http://schemas.android.com/apk/res/android}"
 APPNS="{http://schemas.android.com/apk/res-auto}"
 
 class CompatibilityTests(unittest.TestCase):
-    def test_curated_ids_and_levels(self):
+    def test_site_statuses_and_no_local_ratings(self):
         source=(SRC/"data/GameCompatibility.kt").read_text()
-        for title_id, rating in {
-            "01002B30028F6000":"Perfect",
-            "01005CA01580E000":"Perfect",
-            "01004B10157F2000":"Perfect",
-            "0100B880154FC000":"Perfect",
-            "010062B01525C000":"Playable",
-            "0100B8E016F76000":"Playable",
-            "010003F003A34000":"Perfect",
-            "01007EF00011E000":"Unplayable",
-        }.items():
-            self.assertRegex(source, r'"'+title_id+r'"\s+to\s+'+rating)
-        self.assertIn("return byTitleId[id] ?: Unknown",source)
-        self.assertIn("return withoutTitleId[normalizedTitle] ?: Unknown",source)
-        self.assertIn("id.matches(Regex(\"[0-9A-F]{16}\"))", source)
-        self.assertNotIn("contains(",source)
+        for slug in ("playable", "ingame", "boots", "nothing", "unplayable"):
+            self.assertIn('"'+slug+'" ->', source)
+        self.assertNotIn("Perfect(", source)
+        self.assertNotIn("byTitleId", source)
+        repository=(SRC/"data/GameCompatibilityRepository.kt").read_text()
+        self.assertIn("/data/reviews.json", repository)
+        self.assertIn("it.gpuModel == gpu", repository)
+        self.assertIn("GameCompatibility.Unknown", repository)
+        self.assertNotIn("api.github.com", repository)
 
     def test_all_library_layouts_have_one_overlay(self):
         for name in ("app_item_grid","app_item_grid_compact","app_item_linear"):
@@ -50,13 +44,21 @@ class CompatibilityTests(unittest.TestCase):
     def test_palette_and_recycler_rebind(self):
         palette=ET.parse(RES/"values/colors.xml").getroot()
         colors={c.attrib["name"]:c.text for c in palette.findall("color")}
-        for name in ("perfect","playable","ingame","nothing","unplayable","unknown"):
+        for name in ("playable","ingame","boots","nothing","unplayable","unknown"):
             self.assertRegex(colors["compat_"+name],r"^#[0-9A-F]{6}$")
         adapter=(SRC/"adapter/AppViewItem.kt").read_text()
         self.assertEqual(adapter.count("override val compatibilityBadge = binding.compatibilityBadge"),3)
-        self.assertIn("GameCompatibility.fromGame(item.titleId, item.title)",adapter)
+        self.assertIn("GameCompatibilityRepository.statusFor(item.titleId)",adapter)
         self.assertIn("backgroundTintList = ColorStateList.valueOf",adapter)
         self.assertIn("compatibility.foregroundColor",adapter)
+
+    def test_report_action_prefills_game_and_title_id(self):
+        dialog=(SRC/"AppDialog.kt").read_text()
+        for parameter in ('"template"','"game-name"','"title-id"'):
+            self.assertIn('appendQueryParameter('+parameter,dialog)
+        self.assertIn('binding.submitCompatibility.isEnabled', dialog)
+        layout=ET.parse(RES/"layout/app_dialog.xml").getroot()
+        self.assertEqual(sum(el.attrib.get(ANDROID+"id")=="@+id/submit_compatibility" for el in layout.iter()),1)
 
 if __name__=="__main__":
     unittest.main()
