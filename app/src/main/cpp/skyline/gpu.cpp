@@ -410,6 +410,8 @@ namespace skyline::gpu {
           vkPhysicalDevice(CreatePhysicalDevice(vkInstance)),
           vkDevice(CreateDevice(vkContext, vkPhysicalDevice, vkQueueFamilyIndex, traits, &adrenotoolsImportMapping)),
           bcnComputeEnabled(*state.settings->bcnGpuDecode),
+          bcnShaderCacheEnabled(bcnComputeEnabled && *state.settings->bcnShaderCache && !*state.settings->disableShaderCache),
+          bcnPipelineCacheDir(state.os->publicAppFilesPath + "vk_bcn_pipeline_cache"),
           vkQueue(vkDevice, vkQueueFamilyIndex, 0),
           resolutionScale(resolution::Scale::FromSetting(*state.settings->resolutionScale)),
           memory(*this),
@@ -425,6 +427,7 @@ namespace skyline::gpu {
           debugTracingBuffer(memory.AllocateBuffer(DebugTracingBufferSize)) {
         LOGI("Internal resolution scale: {}x (texture-cache scaling)", resolutionScale.Factor());
         if (bcnComputeEnabled) LOGI("BCn compute decoding available for formats without native BCn support (experimental)");
+        if (bcnShaderCacheEnabled) LOGI("BCn compute pipeline cache enabled");
     }
 
     void GPU::Initialise() {

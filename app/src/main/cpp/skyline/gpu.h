@@ -50,8 +50,12 @@ namespace skyline::gpu {
         TraitManager traits;
         vk::raii::Device vkDevice;
         const bool bcnComputeEnabled; //!< Snapshot at game launch
+        const bool bcnShaderCacheEnabled; //!< Opt-in compute pipeline disk cache (effective only with BCn compute)
         std::mutex bcnComputeMutex;
         std::array<std::shared_ptr<BcnComputePipeline>, 3> bcnComputePipelines;
+        vk::raii::PipelineCache bcnPipelineCache{nullptr};
+        std::filesystem::path bcnPipelineCacheDir;
+        bool bcnPipelineCacheInitialized{};
         std::atomic<bool> bcnComputeFailed{}; //!< Skip retries after a pre-recording setup failure
 
         std::mutex queueMutex; //!< Synchronizes access to the queue as it is externally synchronized
