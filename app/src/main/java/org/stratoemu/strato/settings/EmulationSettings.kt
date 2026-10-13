@@ -57,6 +57,7 @@ class EmulationSettings private constructor(context : Context, prefName : String
 
     // BCn: experimental GPU decoding, applied on next game launch.
     var bcnGpuDecode by sharedPreferences(context, false, prefName = prefName)
+    var bcnShaderCache by sharedPreferences(context, true, prefName = prefName)
 
     // Hacks
     var enableFastGpuReadbackHack by sharedPreferences(context, false, prefName = prefName)

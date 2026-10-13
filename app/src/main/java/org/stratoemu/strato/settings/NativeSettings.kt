@@ -48,7 +48,8 @@ data class NativeSettings(
     var logLevel : Int,
     var validationLayer : Boolean,
     var resolutionScale : Int = 2,
-    var bcnGpuDecode : Boolean = false
+    var bcnGpuDecode : Boolean = false,
+    var bcnShaderCache : Boolean = true
 ) {
     constructor(context : Context, pref : EmulationSettings) : this(
         pref.isDocked,
@@ -74,7 +75,8 @@ data class NativeSettings(
         pref.logLevel,
         BuildConfig.BUILD_TYPE != "release" && pref.validationLayer,
         pref.resolutionScale,
-        pref.bcnGpuDecode
+        pref.bcnGpuDecode,
+        pref.bcnShaderCache
     )
 
     /**
