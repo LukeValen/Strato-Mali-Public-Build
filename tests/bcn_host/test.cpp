@@ -4,6 +4,8 @@
 #include <iostream>
 #include <random>
 #include <cmath>
+#include <fstream>
+#include <unistd.h>
 namespace skyline::gpu {
     GPU::GPU() {
         const vk::ApplicationInfo application{.pApplicationName="bcn-compute-test", .apiVersion=VK_API_VERSION_1_1};
@@ -96,6 +98,10 @@ void CheckFormat(GPU &gpu, vk::Format format, std::mt19937 &random) {
 int main() {
     try {
         GPU gpu;
+        const auto cacheDir{std::filesystem::temp_directory_path() /
+            ("strato-bcn-cache-test-" + std::to_string(getpid()))};
+        gpu.bcnShaderCacheEnabled = true;
+        gpu.bcnPipelineCacheDir = cacheDir;
         std::mt19937 random(0xBC01237);
         for (auto format : {vk::Format::eBc1RgbaUnormBlock,vk::Format::eBc1RgbaSrgbBlock,vk::Format::eBc2UnormBlock,vk::Format::eBc2SrgbBlock,
             vk::Format::eBc3UnormBlock,vk::Format::eBc3SrgbBlock,vk::Format::eBc6HUfloatBlock,vk::Format::eBc6HSfloatBlock,
@@ -116,5 +122,18 @@ int main() {
         catch (const BcnComputeIneligible&) { rejected=true; }
         if (!rejected) return 5;
         std::cout << "Invalid input and output ranges rejected; RGTC stays on CPU\n";
+        auto cacheFile{std::filesystem::directory_iterator(cacheDir)->path()};
+        if (std::filesystem::file_size(cacheFile) < 32) return 6;
+        // A damaged cache must be discarded without disabling BCn decoding.
+        { std::ofstream invalid{cacheFile, std::ios::binary | std::ios::trunc}; invalid << "broken"; }
+        {
+            GPU retry;
+            retry.bcnShaderCacheEnabled = true;
+            retry.bcnPipelineCacheDir = cacheDir;
+            CheckFormat(retry, vk::Format::eBc1RgbaUnormBlock, random);
+        }
+        if (std::filesystem::file_size(cacheFile) < 32) return 7;
+        std::filesystem::remove_all(cacheDir);
+        std::cout << "BCn pipeline cache survives damage and rebuilds\n";
     } catch (const std::exception &error) { std::cerr << error.what() << '\n'; return 1; }
 }
