@@ -40,12 +40,16 @@ class NierReleaseTest(unittest.TestCase):
                 self.assertIn("nierCaptureEnabled",content)
                 self.assertNotIn("nierDiagnosticsEnabled",content)
 
-    def test_switch_labels_are_explicit(self):
+    def test_compatibility_uses_reviewed_site_reports(self):
         game=(ROOT/"app/src/main/java/org/stratoemu/strato/data/GameCompatibility.kt").read_text()
-        self.assertIn('"0100B8E016F76000" to Playable',game)
-        self.assertIn('"01007EF00011E000" to Unplayable',game)
+        repository=(ROOT/"app/src/main/java/org/stratoemu/strato/data/GameCompatibilityRepository.kt").read_text()
+        self.assertNotIn('"0100B8E016F76000" to Playable',game)
+        self.assertNotIn('"01007EF00011E000" to Unplayable',game)
         self.assertIn('"Nothing", R.color.compat_nothing',game)
         self.assertIn('"Unplayable", R.color.compat_unplayable',game)
-        self.assertIn('return byTitleId[id] ?: Unknown',game)
+        self.assertIn('fun fromSiteStatus(status: String)',game)
+        self.assertIn('Strato-Mali-Compatibility/data/reviews.json',repository)
+        self.assertIn('filter { it.gpuModel == gpu }',repository)
+        self.assertIn('?: GameCompatibility.Unknown',repository)
 if __name__=="__main__":
     unittest.main()
