@@ -33,6 +33,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import org.stratoemu.strato.adapter.*
 import org.stratoemu.strato.data.AppItem
 import org.stratoemu.strato.data.AppItemTag
+import org.stratoemu.strato.data.GameCompatibilityRepository
 import org.stratoemu.strato.databinding.MainActivityBinding
 import org.stratoemu.strato.loader.AppEntry
 import org.stratoemu.strato.loader.LoaderResult
@@ -43,6 +44,8 @@ import org.stratoemu.strato.settings.SettingsActivity
 import org.stratoemu.strato.utils.GpuDriverHelper
 import org.stratoemu.strato.utils.WindowInsetsHelper
 import javax.inject.Inject
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import kotlin.math.ceil
 import com.google.android.material.R as MaterialR
 
@@ -423,6 +426,12 @@ class MainActivity : AppCompatActivity() {
 
         // Try to return to normal GPU clocks upon resuming back to main activity, to avoid GPU being stuck at max clocks after a crash
         GpuDriverHelper.forceMaxGpuClocks(false)
+
+        GameCompatibilityRepository.setDeviceGpuName(GpuDriverHelper.getSystemGpuName())
+        lifecycleScope.launch {
+            if (GameCompatibilityRepository.refresh(this@MainActivity) && !isFinishing && !isDestroyed)
+                adapter.notifyItemRangeChanged(0, adapter.itemCount)
+        }
 
         var layoutTypeChanged = false
         for (appViewItem in adapter.allItems.filterIsInstance(AppViewItem::class.java)) {

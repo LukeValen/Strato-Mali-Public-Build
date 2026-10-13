@@ -6,10 +6,12 @@
 package org.stratoemu.strato
 
 import android.content.ComponentName
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
+import android.net.Uri
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -19,6 +21,8 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import androidx.appcompat.app.AlertDialog
+import androidx.browser.customtabs.CustomTabsClient
+import androidx.browser.customtabs.CustomTabsIntent
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
@@ -36,6 +40,7 @@ import kotlinx.coroutines.launch
 import android.widget.ProgressBar
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.util.Locale
 import org.stratoemu.strato.utils.serializable
 
 /**
@@ -240,6 +245,34 @@ class AppDialog : BottomSheetDialogFragment() {
         binding.gameVersion.text = item.version ?: item.loaderResultString(requireContext())
         binding.gameTitleId.text = item.titleId
         binding.gameAuthor.text = item.author
+
+        val reportTitleId = item.titleId?.trim()?.uppercase(Locale.ROOT)
+        binding.submitCompatibility.isEnabled = reportTitleId?.matches(Regex("[0-9A-F]{16}")) == true
+        binding.submitCompatibility.setOnClickListener {
+            val id = reportTitleId ?: return@setOnClickListener
+            val name = item.title.replace(Regex("[\\r\\n]"), " ").trim().take(120).ifBlank { id }
+            val report = Uri.parse("https://github.com/LukeValen/Strato-Mali-Compatibility/issues/new")
+                .buildUpon()
+                .appendQueryParameter("template", "compatibility-report.yml")
+                .appendQueryParameter("title", "[Compatibility]: $name")
+                .appendQueryParameter("game-name", name)
+                .appendQueryParameter("title-id", id)
+                .appendQueryParameter("emulator", BuildConfig.VERSION_NAME)
+            org.stratoemu.strato.utils.GpuDriverHelper.getSystemGpuName()
+                ?.takeIf { it.isNotBlank() }?.take(100)?.let { report.appendQueryParameter("gpu", it) }
+            try {
+                // Keep the issue form in a browser: some GitHub app versions discard URL field prefills.
+                val browserPackage = CustomTabsClient.getPackageName(requireContext(), null)
+                if (browserPackage != null) {
+                    CustomTabsIntent.Builder().build().apply { intent.setPackage(browserPackage) }
+                        .launchUrl(requireContext(), report.build())
+                } else {
+                    startActivity(Intent(Intent.ACTION_VIEW, report.build()).addCategory(Intent.CATEGORY_BROWSABLE))
+                }
+            } catch (_: ActivityNotFoundException) {
+                Snackbar.make(binding.root, R.string.compatibility_open_failed, Snackbar.LENGTH_LONG).show()
+            }
+        }
 
         binding.gamePlay.isEnabled = item.loaderResult == LoaderResult.Success
         binding.gamePlay.setOnClickListener {
