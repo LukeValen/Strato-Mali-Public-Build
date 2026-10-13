@@ -3,4 +3,6 @@
     <string name="settings_bcn_summary">Experimental BCn texture decoding. Changes apply when restarting the game.</string>
     <string name="bcn_gpu_decode">GPU BCn decoding (experimental)</string>
     <string name="bcn_gpu_decode_summary">Use compute shaders for BC1, BC2, BC3, BC6H and BC7 when the GPU does not support those formats natively. Native BCn is preferred; BC4/BC5 keep CPU decoding if unsupported. Disabled by default. Restart the game after changing this option.</string>
+    <string name="bcn_shader_cache">BCn compute shader cache</string>
+    <string name="bcn_shader_cache_summary">Save compiled BCn compute pipelines for this Vulkan driver. Only used when GPU BCn decoding is enabled. The global Disable shader cache option also disables this cache. Restart the game after changing this option.</string>
 </resources>
