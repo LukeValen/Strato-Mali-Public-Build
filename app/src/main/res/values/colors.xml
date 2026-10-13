@@ -5,10 +5,10 @@
     <color name="colorPerfStatsPrimary">#B31E88FF</color>
     <color name="colorPerfStatsSecondary">#B300C8FF</color>
 
-    <!-- Library compatibility colors: curated statuses, not performance measurements. -->
-    <color name="compat_perfect">#00DE78</color>
+    <!-- Community compatibility statuses from reviewed reports. -->
     <color name="compat_playable">#388960</color>
     <color name="compat_ingame">#FFCF48</color>
+    <color name="compat_boots">#546FC3</color>
     <color name="compat_nothing">#D93448</color>
     <color name="compat_unplayable">#DB344A</color>
     <color name="compat_unknown">#BAC1CC</color>

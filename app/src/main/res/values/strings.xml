@@ -346,4 +346,6 @@
     <string name="game_content_already_installed">This content is already installed.</string>
     <string name="game_content_install_failed">Could not install DLC/Update</string>
     <string name="mali_compatibility_accessibility">Compatibility: %1$s</string>
+    <string name="compatibility_submit">Submit to compatibility list</string>
+    <string name="compatibility_open_failed">Could not open the compatibility report. Install a browser and try again.</string>
 </resources>
