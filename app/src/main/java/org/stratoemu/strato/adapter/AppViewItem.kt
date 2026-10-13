@@ -21,7 +21,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.card.MaterialCardView
 import org.stratoemu.strato.R
 import org.stratoemu.strato.data.AppItem
-import org.stratoemu.strato.data.GameCompatibility
+import org.stratoemu.strato.data.GameCompatibilityRepository
 import org.stratoemu.strato.databinding.AppItemGridBinding
 import org.stratoemu.strato.databinding.AppItemGridCompactBinding
 import org.stratoemu.strato.databinding.AppItemLinearBinding
@@ -117,7 +117,7 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         binding.icon.contentDescription = item.title
         // Every bind resets the label/color. RecyclerView reuses holders for
         // different games when the library is scrolled, searched or sorted.
-        val compatibility = GameCompatibility.fromGame(item.titleId, item.title)
+        val compatibility = GameCompatibilityRepository.statusFor(item.titleId)
         binding.compatibilityBadge.apply {
             text = compatibility.label
             backgroundTintList = ColorStateList.valueOf(
