@@ -1,9 +1,101 @@
 // SPDX-License-Identifier: MPL-2.0
 #include <gpu.h>
+#include <filesystem>
+#include <fstream>
 #include "bcn_compute.h"
 #include "bcn_shaders.h"
 
 namespace skyline::gpu {
+    namespace {
+        // A private cache: never mix guest graphics pipelines or another shader revision.
+        constexpr u32 BcnCacheMagic{0x314e4342}; // "BCN1"
+        constexpr size_t MaxBcnCacheBytes{16 * 1024 * 1024};
+        struct CacheEnvelope {
+            u32 magic;
+            u32 size;
+            u64 hash;
+        };
+
+        u64 CacheHash(span<const u8> bytes) {
+            u64 hash{14695981039346656037ULL};
+            for (const auto byte : bytes) hash = (hash ^ byte) * 1099511628211ULL;
+            return hash;
+        }
+
+        std::filesystem::path CachePath(GPU &gpu) {
+            const auto properties{gpu.vkPhysicalDevice.getProperties()};
+            // The Vulkan UUID changes with incompatible driver pipeline binaries.
+            std::string uuid;
+            constexpr char hex[] = "0123456789abcdef";
+            for (const auto byte : properties.pipelineCacheUUID) {
+                uuid += hex[byte >> 4];
+                uuid += hex[byte & 15];
+            }
+            return gpu.bcnPipelineCacheDir / ("bcn-v1-" + std::to_string(properties.vendorID) + "-" +
+                std::to_string(properties.deviceID) + "-" + std::to_string(properties.driverVersion) + "-" + uuid);
+        }
+
+        void InitialiseCache(GPU &gpu) {
+            if (gpu.bcnPipelineCacheInitialized || !gpu.bcnShaderCacheEnabled) return;
+            gpu.bcnPipelineCacheInitialized = true; // Called while holding bcnComputeMutex.
+            try {
+                const auto path{CachePath(gpu)};
+                std::vector<u8> bytes;
+                std::error_code ec;
+                const auto fileSize{std::filesystem::file_size(path, ec)};
+                if (!ec && fileSize >= sizeof(CacheEnvelope) + sizeof(VkPipelineCacheHeaderVersionOne) &&
+                    fileSize <= MaxBcnCacheBytes + sizeof(CacheEnvelope)) {
+                    std::ifstream stream{path, std::ios::binary};
+                    CacheEnvelope envelope{};
+                    stream.read(reinterpret_cast<char *>(&envelope), sizeof(envelope));
+                    if (stream && envelope.magic == BcnCacheMagic && envelope.size == fileSize - sizeof(envelope)) {
+                        bytes.resize(envelope.size);
+                        stream.read(reinterpret_cast<char *>(bytes.data()), bytes.size());
+                        if (!stream || CacheHash(bytes) != envelope.hash) bytes.clear();
+                    }
+                }
+                if (!bytes.empty()) {
+                    VkPipelineCacheHeaderVersionOne header{};
+                    std::memcpy(&header, bytes.data(), sizeof(header));
+                    const auto properties{gpu.vkPhysicalDevice.getProperties()};
+                    if (header.headerSize != sizeof(header) || header.headerVersion != VK_PIPELINE_CACHE_HEADER_VERSION_ONE ||
+                        header.vendorID != properties.vendorID || header.deviceID != properties.deviceID ||
+                        std::memcmp(header.pipelineCacheUUID, properties.pipelineCacheUUID.data(), VK_UUID_SIZE))
+                        bytes.clear();
+                }
+                gpu.bcnPipelineCache = gpu.vkDevice.createPipelineCache(vk::PipelineCacheCreateInfo{
+                    .initialDataSize = bytes.size(), .pInitialData = bytes.data()});
+                if (!bytes.empty()) LOGI("Loaded BCn compute pipeline cache ({} bytes)", bytes.size());
+            } catch (const std::exception &error) {
+                LOGW("BCn pipeline cache unavailable; compiling shaders normally: {}", error.what());
+                gpu.bcnPipelineCache = vk::raii::PipelineCache{nullptr};
+            }
+        }
+
+        void SaveCache(GPU &gpu) {
+            if (*gpu.bcnPipelineCache == vk::PipelineCache{}) return;
+            try {
+                const auto bytes{gpu.bcnPipelineCache.getData()};
+                if (bytes.empty() || bytes.size() > MaxBcnCacheBytes) return;
+                std::filesystem::create_directories(gpu.bcnPipelineCacheDir);
+                const auto path{CachePath(gpu)};
+                auto temporary{path};
+                temporary += ".tmp";
+                const CacheEnvelope envelope{BcnCacheMagic, static_cast<u32>(bytes.size()), CacheHash(bytes)};
+                {
+                    std::ofstream stream{temporary, std::ios::binary | std::ios::trunc};
+                    stream.write(reinterpret_cast<const char *>(&envelope), sizeof(envelope));
+                    stream.write(reinterpret_cast<const char *>(bytes.data()), bytes.size());
+                    stream.flush();
+                    if (!stream) throw std::runtime_error("Failed to write BCn pipeline cache");
+                }
+                std::filesystem::rename(temporary, path);
+            } catch (const std::exception &error) {
+                LOGW("Could not save BCn pipeline cache: {}", error.what());
+            }
+        }
+    }
+
     struct BcnComputePipeline {
         vk::raii::DescriptorSetLayout setLayout{nullptr};
         vk::raii::PipelineLayout layout{nullptr};
@@ -23,8 +115,21 @@ namespace skyline::gpu {
             const u32 *code{index == 0 ? bcn_shaders::s3tc : index == 1 ? bcn_shaders::bc6 : bcn_shaders::bc7};
             const size_t codeSize{index == 0 ? sizeof(bcn_shaders::s3tc) : index == 1 ? sizeof(bcn_shaders::bc6) : sizeof(bcn_shaders::bc7)};
             auto module{gpu.vkDevice.createShaderModule(vk::ShaderModuleCreateInfo{.codeSize = codeSize, .pCode = code})};
-            pipeline = gpu.vkDevice.createComputePipeline(nullptr, vk::ComputePipelineCreateInfo{
-                .stage = {.stage = vk::ShaderStageFlagBits::eCompute, .module = *module, .pName = "main"}, .layout = *layout});
+            InitialiseCache(gpu);
+            const vk::ComputePipelineCreateInfo info{
+                .stage = {.stage = vk::ShaderStageFlagBits::eCompute, .module = *module, .pName = "main"}, .layout = *layout};
+            if (*gpu.bcnPipelineCache != vk::PipelineCache{}) {
+                try {
+                    pipeline = gpu.vkDevice.createComputePipeline(gpu.bcnPipelineCache, info);
+                } catch (const vk::DeviceLostError &) {
+                    throw;
+                } catch (const std::exception &error) {
+                    LOGW("BCn cached pipeline rejected; retrying without cache: {}", error.what());
+                    gpu.bcnPipelineCache = vk::raii::PipelineCache{nullptr};
+                }
+            }
+            if (*pipeline == vk::Pipeline{}) pipeline = gpu.vkDevice.createComputePipeline(nullptr, info);
+            SaveCache(gpu);
         }
     };
 
