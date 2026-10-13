@@ -1,63 +1,30 @@
-/*
- * SPDX-License-Identifier: MPL-2.0
- * Compatibility labels are a small, curated Strato Mali library feature.
- */
+/* SPDX-License-Identifier: MPL-2.0 */
 package org.stratoemu.strato.data
 
 import androidx.annotation.ColorRes
 import org.stratoemu.strato.R
-import java.util.Locale
 
+/** Status values published by Strato Mali Compatibility's reviewed reports. */
 enum class GameCompatibility(
     val label: String,
     @ColorRes val backgroundColor: Int,
     @ColorRes val foregroundColor: Int,
 ) {
-    Perfect("Perfect", R.color.compat_perfect, R.color.compat_text_dark),
     Playable("Playable", R.color.compat_playable, R.color.compat_text_light),
     InGame("In-game", R.color.compat_ingame, R.color.compat_text_dark),
+    Boots("Boots", R.color.compat_boots, R.color.compat_text_light),
     Nothing("Nothing", R.color.compat_nothing, R.color.compat_text_light),
     Unplayable("Unplayable", R.color.compat_unplayable, R.color.compat_text_light),
     Unknown("Unknown", R.color.compat_unknown, R.color.compat_text_dark);
 
     companion object {
-        // Switch application (base-game) Title IDs. Updates/DLC use the game's
-        // base entry metadata, not their own independent compatibility rating.
-        private val byTitleId = mapOf(
-            "01002B30028F6000" to Perfect,   // Celeste
-            "01005CA01580E000" to Perfect,   // Persona 5 Royal (global)
-            "01004B10157F2000" to Perfect,   // Persona 5 Royal (Asia)
-            "0100B880154FC000" to Perfect,   // Persona 5 Royal (Japan)
-            "010062B01525C000" to Playable,  // Persona 4 Golden
-            "0100B8E016F76000" to Playable,   // NieR:Automata
-            "010003F003A34000" to Perfect,   // Pokémon Let's Go Pikachu
-            "01007EF00011E000" to Unplayable, // The Legend of Zelda: Breath of the Wild
-        )
-
-        // Only use an exact title match when the ROM could not supply a title
-        // ID (e.g. partially parsed homebrew metadata or a file entry).
-        // No fuzzy/substring matching, and never override a valid Title ID.
-        private val withoutTitleId = mapOf(
-            "celeste" to Perfect,
-            "persona 5 royal" to Perfect,
-            "persona 4 golden" to Playable,
-            "nier:automata the end of yorha edition" to Playable,
-            "nier automata" to Playable,
-            "pokémon: let's go, pikachu!" to Perfect,
-            "pokemon: let's go, pikachu!" to Perfect,
-            "pokémon lets go pikachu" to Perfect,
-            "pokemon lets go pikachu" to Perfect,
-            "the legend of zelda: breath of the wild" to Unplayable,
-            "the legend of zelda breath of the wild" to Unplayable,
-            "breath of the wild" to Unplayable,
-        )
-
-        fun fromGame(titleId: String?, title: String?): GameCompatibility {
-            val id = titleId?.trim()?.uppercase(Locale.ROOT)?.removePrefix("0X")
-            if (id != null && id.matches(Regex("[0-9A-F]{16}")))
-                return byTitleId[id] ?: Unknown
-            val normalizedTitle = title?.trim()?.lowercase(Locale.ROOT) ?: return Unknown
-            return withoutTitleId[normalizedTitle] ?: Unknown
+        fun fromSiteStatus(status: String): GameCompatibility? = when (status) {
+            "playable" -> Playable
+            "ingame" -> InGame
+            "boots" -> Boots
+            "nothing" -> Nothing
+            "unplayable" -> Unplayable
+            else -> null
         }
     }
 }
