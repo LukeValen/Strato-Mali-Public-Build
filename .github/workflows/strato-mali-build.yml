@@ -181,7 +181,7 @@ jobs:
         run: ./gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand assembleMainlineRelease
 
       - name: Test firmware installation rollback
-        run: ./gradlew --no-daemon testMainlineReleaseUnitTest --tests org.stratoemu.strato.setup.DirectoryTransactionTest --tests org.stratoemu.strato.applet.swkbd.SoftwareKeyboardSessionTest
+        run: ./gradlew --no-daemon testMainlineReleaseUnitTest --tests org.stratoemu.strato.data.CompatibilityFeedTest --tests org.stratoemu.strato.setup.DirectoryTransactionTest --tests org.stratoemu.strato.applet.swkbd.SoftwareKeyboardSessionTest
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

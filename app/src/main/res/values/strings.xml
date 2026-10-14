@@ -348,4 +348,6 @@
     <string name="mali_compatibility_accessibility">Compatibility: %1$s</string>
     <string name="compatibility_submit">Submit to compatibility list</string>
     <string name="compatibility_open_failed">Could not open the compatibility report. Install a browser and try again.</string>
+    <string name="mali_compatibility_rating_badge">%1$s\n★ %2$s/5</string>
+    <string name="mali_compatibility_rating_accessibility">Community compatibility: %1$s. %2$s out of 5 stars from %3$d reports on the compatibility website.</string>
 </resources>

@@ -21,7 +21,7 @@ class CompatibilityTests(unittest.TestCase):
         self.assertNotIn("byTitleId", source)
         repository=(SRC/"data/GameCompatibilityRepository.kt").read_text()
         self.assertIn("/data/reviews.json", repository)
-        self.assertIn("it.gpuModel == gpu", repository)
+        self.assertNotIn("gpuModel ==", repository)
         self.assertIn("GameCompatibility.Unknown", repository)
         self.assertNotIn("api.github.com", repository)
 
@@ -48,7 +48,7 @@ class CompatibilityTests(unittest.TestCase):
             self.assertRegex(colors["compat_"+name],r"^#[0-9A-F]{6}$")
         adapter=(SRC/"adapter/AppViewItem.kt").read_text()
         self.assertEqual(adapter.count("override val compatibilityBadge = binding.compatibilityBadge"),3)
-        self.assertIn("GameCompatibilityRepository.statusFor(item.titleId)",adapter)
+        self.assertIn("GameCompatibilityRepository.summaryFor(item.titleId)",adapter)
         self.assertIn("backgroundTintList = ColorStateList.valueOf",adapter)
         self.assertIn("compatibility.foregroundColor",adapter)
 

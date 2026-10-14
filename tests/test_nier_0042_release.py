@@ -49,7 +49,7 @@ class NierReleaseTest(unittest.TestCase):
         self.assertIn('"Unplayable", R.color.compat_unplayable',game)
         self.assertIn('fun fromSiteStatus(status: String)',game)
         self.assertIn('Strato-Mali-Compatibility/data/reviews.json',repository)
-        self.assertIn('filter { it.gpuModel == gpu }',repository)
+        self.assertNotIn('filter { it.gpuModel == gpu }',repository)
         self.assertIn('?: GameCompatibility.Unknown',repository)
 if __name__=="__main__":
     unittest.main()

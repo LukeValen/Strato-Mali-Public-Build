@@ -145,7 +145,10 @@ class MainActivity : AppCompatActivity() {
                 obtainStyledAttributes(intArrayOf(MaterialR.attr.colorSurfaceVariant)).use { it.getColor(0, Color.BLACK) })
             setColorSchemeColors(obtainStyledAttributes(intArrayOf(MaterialR.attr.colorPrimary)).use { it.getColor(0, Color.WHITE) })
             post { setDistanceToTriggerSync(binding.swipeRefreshLayout.height / 3) }
-            setOnRefreshListener { loadRoms(false) }
+            setOnRefreshListener {
+                loadRoms(false)
+                refreshCompatibility(force = true)
+            }
         }
 
         viewModel.stateData.observe(this, ::handleState)
@@ -421,17 +424,20 @@ class MainActivity : AppCompatActivity() {
         onBackPressedCallback.isEnabled = binding.searchBar.hasFocus() || binding.searchBar.text.isNotEmpty()
     }
 
+    private fun refreshCompatibility(force: Boolean = false) {
+        lifecycleScope.launch {
+            if (GameCompatibilityRepository.refresh(this@MainActivity, force) && !isFinishing && !isDestroyed)
+                adapter.notifyItemRangeChanged(0, adapter.itemCount)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
 
         // Try to return to normal GPU clocks upon resuming back to main activity, to avoid GPU being stuck at max clocks after a crash
         GpuDriverHelper.forceMaxGpuClocks(false)
 
-        GameCompatibilityRepository.setDeviceGpuName(GpuDriverHelper.getSystemGpuName())
-        lifecycleScope.launch {
-            if (GameCompatibilityRepository.refresh(this@MainActivity) && !isFinishing && !isDestroyed)
-                adapter.notifyItemRangeChanged(0, adapter.itemCount)
-        }
+        refreshCompatibility()
 
         var layoutTypeChanged = false
         for (appViewItem in adapter.allItems.filterIsInstance(AppViewItem::class.java)) {

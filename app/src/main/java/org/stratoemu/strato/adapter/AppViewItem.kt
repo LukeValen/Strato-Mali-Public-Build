@@ -21,7 +21,9 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.card.MaterialCardView
 import org.stratoemu.strato.R
 import org.stratoemu.strato.data.AppItem
+import org.stratoemu.strato.data.GameCompatibility
 import org.stratoemu.strato.data.GameCompatibilityRepository
+import java.util.Locale
 import org.stratoemu.strato.databinding.AppItemGridBinding
 import org.stratoemu.strato.databinding.AppItemGridCompactBinding
 import org.stratoemu.strato.databinding.AppItemLinearBinding
@@ -117,14 +119,20 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         binding.icon.contentDescription = item.title
         // Every bind resets the label/color. RecyclerView reuses holders for
         // different games when the library is scrolled, searched or sorted.
-        val compatibility = GameCompatibilityRepository.statusFor(item.titleId)
+        val summary = GameCompatibilityRepository.summaryFor(item.titleId)
+        val compatibility = summary?.status ?: GameCompatibility.Unknown
         binding.compatibilityBadge.apply {
-            text = compatibility.label
+            text = if (summary == null) compatibility.label else
+                context.getString(R.string.mali_compatibility_rating_badge, compatibility.label,
+                    String.format(Locale.ENGLISH, "%.1f", summary.averageStars))
             backgroundTintList = ColorStateList.valueOf(
                 ContextCompat.getColor(context, compatibility.backgroundColor)
             )
             setTextColor(ContextCompat.getColor(context, compatibility.foregroundColor))
-            contentDescription = context.getString(R.string.mali_compatibility_accessibility, compatibility.label)
+            contentDescription = if (summary == null)
+                context.getString(R.string.mali_compatibility_accessibility, compatibility.label)
+            else context.getString(R.string.mali_compatibility_rating_accessibility,
+                compatibility.label, String.format(Locale.ENGLISH, "%.1f", summary.averageStars), summary.reportCount)
         }
 
         if (layoutType != LayoutType.List) {
