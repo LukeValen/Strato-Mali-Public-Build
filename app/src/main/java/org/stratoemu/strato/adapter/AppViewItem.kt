@@ -124,7 +124,7 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         binding.compatibilityBadge.apply {
             text = if (summary == null) compatibility.label else
                 context.getString(R.string.mali_compatibility_rating_badge, compatibility.label,
-                    String.format(Locale.ENGLISH, "%.1f", summary.averageStars))
+                    String.format(Locale.forLanguageTag("pt-BR"), "%.1f", summary.averageStars))
             backgroundTintList = ColorStateList.valueOf(
                 ContextCompat.getColor(context, compatibility.backgroundColor)
             )

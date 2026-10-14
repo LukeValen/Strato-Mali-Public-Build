@@ -51,6 +51,9 @@ class CompatibilityTests(unittest.TestCase):
         self.assertIn("GameCompatibilityRepository.summaryFor(item.titleId)",adapter)
         self.assertIn("backgroundTintList = ColorStateList.valueOf",adapter)
         self.assertIn("compatibility.foregroundColor",adapter)
+        strings=(RES/"values/strings.xml").read_text()
+        self.assertIn('%2$s/5,0',strings)
+        self.assertIn('Locale.forLanguageTag("pt-BR")',adapter)
 
     def test_report_action_prefills_game_and_title_id(self):
         dialog=(SRC/"AppDialog.kt").read_text()
