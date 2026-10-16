@@ -116,6 +116,19 @@ int main(int argc, char **argv) {
         {.format = depthFormat, .samples = vk::SampleCountFlagBits::e1, .loadOp = vk::AttachmentLoadOp::eLoad,
          .storeOp = vk::AttachmentStoreOp::eStore, .stencilLoadOp = vk::AttachmentLoadOp::eLoad,
          .stencilStoreOp = vk::AttachmentStoreOp::eStore, .initialLayout = vk::ImageLayout::eGeneral, .finalLayout = vk::ImageLayout::eGeneral}}};
+    const vk::Extent2D coverage{128, 72};
+    const vk::Rect2D full{{0, 0}, coverage};
+    const vk::Rect2D partial{{0, 0}, {127, 72}};
+    auto colorClear{descriptions[0]};
+    colorClear.loadOp = vk::AttachmentLoadOp::eClear;
+    assert(!resolution::NeedsNativeLoad(colorClear, vk::ImageAspectFlagBits::eColor, full, coverage));
+    assert(resolution::NeedsNativeLoad(colorClear, vk::ImageAspectFlagBits::eColor, partial, coverage));
+    assert(resolution::NeedsNativeLoad(descriptions[0], vk::ImageAspectFlagBits::eColor, full, coverage));
+    auto depthClear{descriptions[1]};
+    depthClear.loadOp = vk::AttachmentLoadOp::eClear;
+    assert(resolution::NeedsNativeLoad(depthClear, depthAspect, full, coverage)); // Stencil still loads.
+    depthClear.stencilLoadOp = vk::AttachmentLoadOp::eClear;
+    assert(!resolution::NeedsNativeLoad(depthClear, depthAspect, full, coverage));
     const vk::AttachmentReference colorRef{0, vk::ImageLayout::eGeneral}, depthRef{1, vk::ImageLayout::eGeneral};
     const vk::SubpassDescription subpass{.pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
         .colorAttachmentCount = 1, .pColorAttachments = &colorRef, .pDepthStencilAttachment = &depthRef};

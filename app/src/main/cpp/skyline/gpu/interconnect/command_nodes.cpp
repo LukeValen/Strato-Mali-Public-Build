@@ -374,15 +374,30 @@ namespace skyline::gpu::interconnect::node {
                     const auto &target{scaledTargets[i]};
                     cycle->AttachObject(target);
                     cycle->AttachObject(view);
-                    if (!view->texture->HasScaledContent()) {
-                        resolution::Barrier(commandBuffer, view->texture->GetBacking(), view->range.aspectMask);
+                    const bool hadScaledContent{view->texture->HasScaledContent()};
+                    bool copiedNative{};
+                    if (!hadScaledContent) {
+                        const bool needsLoad{resolution::NeedsNativeLoad(attachmentDescriptions[i],
+                            view->range.aspectMask, renderArea,
+                            {view->texture->dimensions.width, view->texture->dimensions.height})};
+                        if (needsLoad)
+                            resolution::Barrier(commandBuffer, view->texture->GetBacking(), view->range.aspectMask);
                         resolution::Barrier(commandBuffer, target->image.vkImage, view->range.aspectMask, !target->initialized);
                         target->initialized = true;
-                        resolution::Blit(commandBuffer, view->texture->GetBacking(),
-                            vk::Extent2D{view->texture->dimensions.width, view->texture->dimensions.height},
-                            target->image.vkImage, target->extent, view->range.aspectMask, ResolutionFilter(view, gpu));
+                        if (needsLoad) {
+                            resolution::Blit(commandBuffer, view->texture->GetBacking(),
+                                vk::Extent2D{view->texture->dimensions.width, view->texture->dimensions.height},
+                                target->image.vkImage, target->extent, view->range.aspectMask, ResolutionFilter(view, gpu));
+                            copiedNative = true;
+                        } else if (++gpu.resolutionLoadBlitsSkipped == 1) {
+                            LOGI("Resolution scale {}x: skipping native load for full attachment clear/discard",
+                                gpu.resolutionScale.Factor());
+                        }
                     }
-                    resolution::Barrier(commandBuffer, target->image.vkImage, view->range.aspectMask);
+                    // A skipped blit leaves no transfer writes to synchronize.
+                    // The initial barrier already made the image ready for the pass.
+                    if (copiedNative || hadScaledContent)
+                        resolution::Barrier(commandBuffer, target->image.vkImage, view->range.aspectMask);
                 }
                 // The compiler uses the selected rational factor, not a ratio
                 // recomputed from truncated odd-sized images.

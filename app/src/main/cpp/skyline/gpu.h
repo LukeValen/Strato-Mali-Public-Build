@@ -121,6 +121,7 @@ namespace skyline::gpu {
         bool resolutionAllocationFailed{}; //!< Stop optional allocations after an allocation failure
         std::array<u64, 5> resolutionPassCounts{};
         u64 resolutionAttachmentCount{};
+        u64 resolutionLoadBlitsSkipped{};
         std::atomic<u64> resolutionAllocatedBytes{};
 
         memory::MemoryManager memory;

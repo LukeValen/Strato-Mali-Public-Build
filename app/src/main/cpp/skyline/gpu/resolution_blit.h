@@ -3,6 +3,17 @@
 #include <vulkan/vulkan_raii.hpp>
 
 namespace skyline::gpu::resolution {
+    inline bool NeedsNativeLoad(const vk::AttachmentDescription &attachment, vk::ImageAspectFlags aspects,
+                                vk::Rect2D renderArea, vk::Extent2D nativeExtent) {
+        // A clear/discard only replaces the render area. Preserve the remaining
+        // pixels, and preserve stencil separately when only depth is cleared.
+        return renderArea.offset.x != 0 || renderArea.offset.y != 0 ||
+            renderArea.extent != nativeExtent ||
+            attachment.loadOp == vk::AttachmentLoadOp::eLoad ||
+            ((aspects & vk::ImageAspectFlagBits::eStencil) &&
+             attachment.stencilLoadOp == vk::AttachmentLoadOp::eLoad);
+    }
+
     // Shared by the renderer and the standalone Vulkan integration test.
     inline void Barrier(const vk::raii::CommandBuffer &commandBuffer, vk::Image image,
                         vk::ImageAspectFlags aspects, bool initialize = false) {
