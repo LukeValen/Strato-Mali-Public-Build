@@ -22,9 +22,9 @@ android {
         minSdk 29
         targetSdk 33
 
-        buildConfigField 'String', 'RELEASE_VERSION', '"0.0.5 RC1"'
+        buildConfigField 'String', 'RELEASE_VERSION', '"0.0.5 RC2"'
         versionCode getGitVersionCode()
-        versionName "0.0.5 RC1"
+        versionName "0.0.5 RC2"
 
         ndk {
             //noinspection ChromeOsAbiSupport
