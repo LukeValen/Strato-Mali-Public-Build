@@ -141,6 +141,10 @@
     <string name="executor_slot_count_scale_desc">Scale controlling the maximum number of simultaneous GPU executions (Higher may sometimes perform better but will use more RAM)</string>
     <string name="executor_flush_threshold">Executor Flush Threshold</string>
     <string name="executor_flush_threshold_desc">Controls how frequently work is flushed to the GPU</string>
+    <string name="fast_scaled_clear">Fast scaled clears</string>
+    <string name="fast_scaled_clear_desc">Skips a copy when a scaled render target is fully cleared. Disable if graphics break.</string>
+    <string name="nearest_resolution_blit">Fast resolution blits</string>
+    <string name="nearest_resolution_blit_desc">Uses nearest filtering for scaled render targets. May look sharper or more pixelated; speed varies by GPU.</string>
     <string name="use_direct_memory_import">Use Direct Memory Import</string>
     <string name="use_direct_memory_import_desc">May alter performance and stability in some games\n<b>NOTE:</b> This option only works on proprietary Adreno drivers</string>
     <string name="force_max_gpu_clocks">Force Maximum GPU Clocks</string>

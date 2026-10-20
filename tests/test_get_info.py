@@ -40,6 +40,8 @@ struct KProcess {
   struct {u64 programId=0x123;} aci0;
  } npdm;
  void *tlsExceptionContext=nullptr;
+ u64 freeThreadCount=255;
+ u64 GetFreeThreadCount(){return freeThreadCount;}
  int lookups=0;
  template<class T> std::shared_ptr<T> GetHandle(KHandle handle) {
   ++lookups;
@@ -58,14 +60,19 @@ int main(){
  auto query=[&](u32 id,u32 handle,u64 subtype){SvcContext ctx;ctx.w1=id;ctx.w2=handle;ctx.x3=subtype;GetInfo(state,ctx);return ctx;};
  for(auto handle:{0xffff8001U,0x100U}) {
   auto ctx=query(28,handle,0);assert(ctx.w0==0&&ctx.x1==0);
+  ctx=query(24,handle,0);assert(ctx.w0==0&&ctx.x1==255);
  }
  for(auto handle:{0U,0xffffffffU,0xffff8000U,0x101U,0x102U}) {
   auto ctx=query(28,handle,0);assert(ctx.w0==result::InvalidHandle&&ctx.x1==28);
+  ctx=query(24,handle,0);assert(ctx.w0==result::InvalidHandle&&ctx.x1==24);
  }
  for(u64 subtype:{1ULL,0x100000000ULL,~0ULL}) {
   int before=state.process->lookups;
   auto ctx=query(28,0,subtype);
   assert(ctx.w0==result::InvalidCombination&&ctx.x1==28);
+  assert(state.process->lookups==before);
+  ctx=query(24,0,subtype);
+  assert(ctx.w0==result::InvalidCombination&&ctx.x1==24);
   assert(state.process->lookups==before);
  }
  // Existing alias queries must retain the original reserved size.
@@ -78,4 +85,4 @@ with tempfile.TemporaryDirectory() as directory:
     (path / "test.cpp").write_text(source)
     subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer", str(path / "test.cpp"), "-o", str(path / "test")], check=True)
     subprocess.run([str(path / "test")], check=True)
-print("PASS: GetInfo(28), subtype precedence, process handles and existing queries")
+print("PASS: GetInfo(24/28), subtype precedence, process handles and existing queries")

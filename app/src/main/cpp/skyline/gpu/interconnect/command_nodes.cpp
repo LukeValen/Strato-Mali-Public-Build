@@ -273,6 +273,7 @@ namespace skyline::gpu::interconnect::node {
     }
 
     static vk::Filter ResolutionFilter(const std::shared_ptr<TextureView> &view, GPU &gpu) {
+        if (*gpu.state.settings->nearestResolutionBlit) return vk::Filter::eNearest;
         const auto features{gpu.vkPhysicalDevice.getFormatProperties(view->texture->format->vkFormat).optimalTilingFeatures};
         return (view->range.aspectMask & vk::ImageAspectFlagBits::eColor) &&
             (features & vk::FormatFeatureFlagBits::eSampledImageFilterLinear) ? vk::Filter::eLinear : vk::Filter::eNearest;
@@ -377,9 +378,10 @@ namespace skyline::gpu::interconnect::node {
                     const bool hadScaledContent{view->texture->HasScaledContent()};
                     bool copiedNative{};
                     if (!hadScaledContent) {
-                        const bool needsLoad{resolution::NeedsNativeLoad(attachmentDescriptions[i],
-                            view->range.aspectMask, renderArea,
-                            {view->texture->dimensions.width, view->texture->dimensions.height})};
+                        const bool needsLoad{!*gpu.state.settings->fastScaledClear ||
+                            resolution::NeedsNativeLoad(attachmentDescriptions[i],
+                                view->range.aspectMask, renderArea,
+                                {view->texture->dimensions.width, view->texture->dimensions.height})};
                         if (needsLoad)
                             resolution::Barrier(commandBuffer, view->texture->GetBacking(), view->range.aspectMask);
                         resolution::Barrier(commandBuffer, target->image.vkImage, view->range.aspectMask, !target->initialized);

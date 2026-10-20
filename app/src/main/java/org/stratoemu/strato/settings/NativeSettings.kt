@@ -49,7 +49,9 @@ data class NativeSettings(
     var validationLayer : Boolean,
     var resolutionScale : Int = 2,
     var bcnGpuDecode : Boolean = false,
-    var bcnShaderCache : Boolean = true
+    var bcnShaderCache : Boolean = true,
+    var fastScaledClear : Boolean = true,
+    var nearestResolutionBlit : Boolean = false
 ) {
     constructor(context : Context, pref : EmulationSettings) : this(
         pref.isDocked,
@@ -76,7 +78,9 @@ data class NativeSettings(
         BuildConfig.BUILD_TYPE != "release" && pref.validationLayer,
         pref.resolutionScale,
         pref.bcnGpuDecode,
-        pref.bcnShaderCache
+        pref.bcnShaderCache,
+        pref.fastScaledClear,
+        pref.nearestResolutionBlit
     )
 
     /**

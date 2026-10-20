@@ -97,6 +97,9 @@ namespace skyline {
              */
             std::shared_ptr<KThread> CreateThread(void *entry, u64 argument = 0, void *stackTop = nullptr, std::optional<i8> priority = std::nullopt, std::optional<u8> idealCore = std::nullopt);
 
+            /** @brief Estimated remaining thread slots until resource limits are emulated. */
+            u64 GetFreeThreadCount();
+
             /**
             * @brief The output for functions that return created kernel objects
             * @tparam objectClass The class of the kernel object

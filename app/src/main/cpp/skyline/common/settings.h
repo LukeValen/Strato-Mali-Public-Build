@@ -74,6 +74,8 @@ namespace skyline {
         Setting<bool> disableShaderCache;  //!< Prevents cached shaders from being loaded and disables caching of new shaders
 
         Setting<int> resolutionScale; //!< Internal render scale index; 2 is native
+        Setting<bool> fastScaledClear; //!< Skip the native load when a scaled attachment is fully cleared or discarded
+        Setting<bool> nearestResolutionBlit; //!< Use nearest filtering when resolving scaled color attachments
 
         // GPU
         Setting<std::string> gpuDriver; //!< The label of the GPU driver to use

@@ -161,6 +161,16 @@
             android:summaryOn="@string/shader_cache_disabled"
             app:key="disable_shader_cache"
             app:title="@string/shader_cache" />
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:summary="@string/fast_scaled_clear_desc"
+            app:key="fast_scaled_clear"
+            app:title="@string/fast_scaled_clear" />
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summary="@string/nearest_resolution_blit_desc"
+            app:key="nearest_resolution_blit"
+            app:title="@string/nearest_resolution_blit" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_hacks"

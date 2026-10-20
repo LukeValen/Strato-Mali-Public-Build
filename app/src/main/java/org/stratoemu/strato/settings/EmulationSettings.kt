@@ -54,6 +54,8 @@ class EmulationSettings private constructor(context : Context, prefName : String
     var forceMaxGpuClocks by sharedPreferences(context, false, prefName = prefName)
     var freeGuestTextureMemory by sharedPreferences(context, true, prefName = prefName)
     var disableShaderCache by sharedPreferences(context, false, prefName = prefName)
+    var fastScaledClear by sharedPreferences(context, true, prefName = prefName)
+    var nearestResolutionBlit by sharedPreferences(context, false, prefName = prefName)
 
     // BCn: experimental GPU decoding, applied on next game launch.
     var bcnGpuDecode by sharedPreferences(context, false, prefName = prefName)

@@ -958,6 +958,8 @@ namespace skyline::kernel::svc {
             // 6.0.0+
             TotalMemoryAvailableWithoutSystemResource = 21,
             TotalMemoryUsageWithoutSystemResource = 22,
+            // 11.0.0+
+            FreeThreadCount = 24,
             // 18.0.0+
             AliasRegionExtraSize = 28,
         };
@@ -1072,6 +1074,22 @@ namespace skyline::kernel::svc {
                 // (6 GiB for AS36 / 64 GiB for AS39), with no extra extension.
                 // Report the actual layout; do not advertise unreserved memory.
                 out = 0;
+                break;
+
+            case InfoState::FreeThreadCount:
+                if (id1 != 0) {
+                    ctx.w0 = result::InvalidCombination;
+                    return;
+                }
+                try {
+                    out = state.process->GetHandle<type::KProcess>(handle)->GetFreeThreadCount();
+                } catch (const std::out_of_range &) {
+                    ctx.w0 = result::InvalidHandle;
+                    return;
+                } catch (const exception &) {
+                    ctx.w0 = result::InvalidHandle;
+                    return;
+                }
                 break;
 
             case InfoState::UserExceptionContextAddr:

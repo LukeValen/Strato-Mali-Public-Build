@@ -38,6 +38,8 @@ namespace skyline {
             systemRegion = ktSettings.GetInt<skyline::region::RegionCode>("systemRegion");
             isInternetEnabled = ktSettings.GetBool("isInternetEnabled");
             resolutionScale = ktSettings.GetInt<int>("resolutionScale");
+            fastScaledClear = ktSettings.GetBool("fastScaledClear");
+            nearestResolutionBlit = ktSettings.GetBool("nearestResolutionBlit");
             forceTripleBuffering = ktSettings.GetBool("forceTripleBuffering");
             disableFrameThrottling = ktSettings.GetBool("disableFrameThrottling");
             gpuDriver = ktSettings.GetString("gpuDriver");

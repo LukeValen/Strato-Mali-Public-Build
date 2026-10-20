@@ -125,6 +125,14 @@ namespace skyline::kernel::type {
         return thread;
     }
 
+    u64 KProcess::GetFreeThreadCount() {
+        // Skyline does not yet model Horizon resource limits. Keep the result
+        // consistent with thread creation and never report a negative count.
+        constexpr size_t estimatedThreadLimit{0x100};
+        std::scoped_lock guard{threadMutex};
+        return threads.size() < estimatedThreadLimit ? estimatedThreadLimit - threads.size() : 0;
+    }
+
     void KProcess::ClearHandleTable() {
         std::shared_lock lock(handleMutex);
         handles.clear();
