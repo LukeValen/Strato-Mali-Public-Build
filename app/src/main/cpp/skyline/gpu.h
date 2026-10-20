@@ -49,6 +49,8 @@ namespace skyline::gpu {
         u32 vkQueueFamilyIndex{};
         TraitManager traits;
         vk::raii::Device vkDevice;
+        const bool fastScaledClearEnabled; //!< Skip redundant loads for full scaled clears
+        const bool nearestResolutionBlitEnabled; //!< Prefer nearest filtering for scaled color blits
         const bool bcnComputeEnabled; //!< Snapshot at game launch
         const bool bcnShaderCacheEnabled; //!< Opt-in compute pipeline disk cache (effective only with BCn compute)
         std::mutex bcnComputeMutex;

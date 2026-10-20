@@ -409,6 +409,8 @@ namespace skyline::gpu {
           vkDebugReportCallback(CreateDebugReportCallback(this, vkInstance)),
           vkPhysicalDevice(CreatePhysicalDevice(vkInstance)),
           vkDevice(CreateDevice(vkContext, vkPhysicalDevice, vkQueueFamilyIndex, traits, &adrenotoolsImportMapping)),
+          fastScaledClearEnabled(*state.settings->fastScaledClear),
+          nearestResolutionBlitEnabled(*state.settings->nearestResolutionBlit),
           bcnComputeEnabled(*state.settings->bcnGpuDecode),
           bcnShaderCacheEnabled(bcnComputeEnabled && *state.settings->bcnShaderCache && !*state.settings->disableShaderCache),
           bcnPipelineCacheDir(state.os->publicAppFilesPath + "vk_bcn_pipeline_cache"),
