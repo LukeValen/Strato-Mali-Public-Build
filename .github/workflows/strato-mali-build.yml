@@ -138,6 +138,30 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Restore persistent APK signing key
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.STRATO_SIGNING_KEYSTORE_BASE64 }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.STRATO_SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.STRATO_SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.STRATO_SIGNING_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$SIGNING_KEYSTORE_BASE64" || -z "$SIGNING_STORE_PASSWORD" || -z "$SIGNING_KEY_ALIAS" || -z "$SIGNING_KEY_PASSWORD" ]]; then
+            echo "Missing persistent signing secrets; refusing to publish an APK that cannot update previous builds."
+            exit 1
+          fi
+          key_path="$RUNNER_TEMP/strato-release.jks"
+          printf '%s' "$SIGNING_KEYSTORE_BASE64" | base64 --decode > "$key_path"
+          chmod 600 "$key_path"
+          keytool -list -keystore "$key_path" -storepass "$SIGNING_STORE_PASSWORD" -alias "$SIGNING_KEY_ALIAS" >/dev/null
+          {
+            echo "STRATO_SIGNING_STORE_FILE=$key_path"
+            echo "STRATO_SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD"
+            echo "STRATO_SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS"
+            echo "STRATO_SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
       - name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 

@@ -22,9 +22,10 @@ android {
         minSdk 29
         targetSdk 33
 
-        buildConfigField 'String', 'RELEASE_VERSION', '"0.0.5 RC2"'
-        versionCode getGitVersionCode()
-        versionName "0.0.5 RC2"
+        buildConfigField 'String', 'RELEASE_VERSION', '"0.0.5 RC3"'
+        // Keep this monotonically increasing even when Actions checks out a shallow clone.
+        versionCode 503
+        versionName "0.0.5 RC3"
 
         ndk {
             //noinspection ChromeOsAbiSupport
@@ -57,6 +58,18 @@ android {
         jniLibs.useLegacyPackaging = true
     }
 
+    signingConfigs {
+        stratoRelease {
+            def signingFile = System.getenv('STRATO_SIGNING_STORE_FILE')
+            if (signingFile) {
+                storeFile file(signingFile)
+                storePassword System.getenv('STRATO_SIGNING_STORE_PASSWORD')
+                keyAlias System.getenv('STRATO_SIGNING_KEY_ALIAS')
+                keyPassword System.getenv('STRATO_SIGNING_KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
             debuggable true
@@ -68,7 +81,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug
+            signingConfig System.getenv('STRATO_SIGNING_STORE_FILE') ? signingConfigs.stratoRelease : signingConfigs.debug
             manifestPlaceholders["emulationProcess"] = ":emulationProcess"
         }
 
