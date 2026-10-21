@@ -16,8 +16,12 @@ namespace skyline::kernel::type {
     class KSession : public KSyncObject {
       public:
         std::shared_ptr<service::BaseService> serviceObject;
-        std::vector<std::shared_ptr<service::BaseService>> domains; //!< A vector of services that correspond to virtual handles
-        KHandle handleIndex{}; //!< The currently allocated handle index
+        // Cloned domain sessions share object IDs, but not their transport lifetime.
+        struct DomainState {
+            std::vector<std::shared_ptr<service::BaseService>> objects;
+            KHandle nextHandle{};
+        };
+        std::shared_ptr<DomainState> domainState;
         bool isOpen{true}; //!< If the session is open or not
         bool isDomain{}; //!< If this is a domain session or not
 
@@ -27,14 +31,26 @@ namespace skyline::kernel::type {
         KSession(const DeviceState &state, std::shared_ptr<service::BaseService> &serviceObject) : serviceObject(serviceObject), KSyncObject(state, KType::KSession) {}
 
         /**
+         * @brief Clones the CMIF object into an independently closable session.
+         * This is different from duplicating a kernel handle to this session.
+         */
+        std::shared_ptr<KSession> Clone() {
+            auto clone{std::make_shared<KSession>(state, serviceObject)};
+            clone->isDomain = isDomain;
+            clone->domainState = domainState;
+            return clone;
+        }
+
+        /**
          * @brief Converts this session into a domain session
          * @url https://switchbrew.org/wiki/IPC_Marshalling#Domains
          * @return The virtual handle of this service in the domain
          */
         KHandle ConvertDomain() {
             isDomain = true;
-            domains.push_back(serviceObject);
-            return handleIndex++;
+            domainState = std::make_shared<DomainState>();
+            domainState->objects.push_back(serviceObject);
+            return domainState->nextHandle++;
         }
     };
 }

@@ -242,7 +242,7 @@ namespace skyline {
             std::shared_ptr<ServiceType> PopService(u32 id, type::KSession &session) {
                 std::shared_ptr<service::BaseService> serviceObject;
                 if (session.isDomain)
-                    serviceObject = session.domains.at(domainObjects.at(id));
+                    serviceObject = session.domainState->objects.at(domainObjects.at(id));
                 else
                     serviceObject = session.state.process->GetHandle<kernel::type::KSession>(moveHandles.at(id))->serviceObject;
 

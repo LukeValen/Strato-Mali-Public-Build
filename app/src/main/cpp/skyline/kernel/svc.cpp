@@ -665,22 +665,27 @@ namespace skyline::kernel::svc {
         std::vector<std::shared_ptr<type::KSyncObject>> objectTable;
         objectTable.reserve(numHandles);
 
-        for (const auto &handle : waitHandles) {
-            auto object{state.process->GetHandle(handle)};
-            switch (object->objectType) {
-                case type::KType::KProcess:
-                case type::KType::KThread:
-                case type::KType::KEvent:
-                case type::KType::KSession:
-                    objectTable.push_back(std::static_pointer_cast<type::KSyncObject>(object));
-                    break;
+        try {
+            for (const auto &handle : waitHandles) {
+                auto object{state.process->GetHandle(handle)};
+                switch (object->objectType) {
+                    case type::KType::KProcess:
+                    case type::KType::KThread:
+                    case type::KType::KEvent:
+                    case type::KType::KSession:
+                        objectTable.push_back(std::static_pointer_cast<type::KSyncObject>(object));
+                        break;
 
-                default: {
-                    LOGD("An invalid handle was supplied: 0x{:X}", handle);
-                    ctx.w0 = result::InvalidHandle;
-                    return;
+                    default: {
+                        LOGD("An invalid handle was supplied: 0x{:X}", handle);
+                        ctx.w0 = result::InvalidHandle;
+                        return;
+                    }
                 }
             }
+        } catch (const std::out_of_range &) {
+            ctx.w0 = result::InvalidHandle;
+            return;
         }
 
         i64 timeout{static_cast<i64>(ctx.x3)};
@@ -693,7 +698,7 @@ namespace skyline::kernel::svc {
             LOGD("Waiting on handles:\n{}Timeout: {}ns", handleString, timeout);
         }
 
-        TRACE_EVENT_FMT("kernel", fmt::runtime(waitHandles.size() == 1 ? "WaitSynchronization 0x{:X}" : "WaitSynchronizationMultiple 0x{:X}"), waitHandles[0]);
+        TRACE_EVENT_FMT("kernel", fmt::runtime(waitHandles.size() == 1 ? "WaitSynchronization 0x{:X}" : "WaitSynchronizationMultiple 0x{:X}"), (waitHandles.empty() ? 0 : waitHandles[0]));
 
         std::unique_lock lock(type::KSyncObject::syncObjectMutex);
         if (state.thread->cancelSync) {

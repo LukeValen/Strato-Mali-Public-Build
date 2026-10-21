@@ -167,9 +167,9 @@ namespace skyline::service {
         auto serviceObject{CreateOrGetService(name)};
         KHandle handle{};
         if (session.isDomain) {
-            session.domains.push_back(serviceObject);
-            response.domainObjects.push_back(session.handleIndex);
-            handle = session.handleIndex++;
+            session.domainState->objects.push_back(serviceObject);
+            response.domainObjects.push_back(session.domainState->nextHandle);
+            handle = session.domainState->nextHandle++;
         } else {
             handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
@@ -183,9 +183,9 @@ namespace skyline::service {
         KHandle handle{};
 
         if (session.isDomain) {
-            session.domains.push_back(serviceObject);
-            response.domainObjects.push_back(session.handleIndex);
-            handle = session.handleIndex++;
+            session.domainState->objects.push_back(serviceObject);
+            response.domainObjects.push_back(session.domainState->nextHandle);
+            handle = session.domainState->nextHandle++;
         } else {
             handle = state.process->NewHandle<type::KSession>(serviceObject).handle;
             response.moveHandles.push_back(handle);
@@ -199,7 +199,7 @@ namespace skyline::service {
         auto session{state.process->GetHandle<type::KSession>(handle)};
         if (session->isOpen) {
             if (session->isDomain) {
-                for (const auto &domainService : session->domains)
+                for (const auto &domainService : session->domainState->objects)
                     std::erase_if(serviceMap, [domainService](const auto &entry) {
                         return entry.second == domainService;
                     });
@@ -227,7 +227,7 @@ namespace skyline::service {
                 case ipc::CommandType::RequestWithContext:
                     if (session->isDomain) {
                         try {
-                            auto service{session->domains.at(request.domain->objectId)};
+                            auto service{session->domainState->objects.at(request.domain->objectId)};
                             if (service == nullptr)
                                 throw exception("Domain request used an expired handle");
                             switch (request.domain->command) {
@@ -239,7 +239,7 @@ namespace skyline::service {
                                     std::erase_if(serviceMap, [service](const auto &entry) {
                                         return entry.second == service;
                                     });
-                                    session->domains.at(request.domain->objectId).reset();
+                                    session->domainState->objects.at(request.domain->objectId).reset();
                                     break;
                             }
                         } catch (std::out_of_range &) {
@@ -261,7 +261,7 @@ namespace skyline::service {
 
                         case ipc::ControlCommand::CloneCurrentObject:
                         case ipc::ControlCommand::CloneCurrentObjectEx:
-                            response.moveHandles.push_back(state.process->InsertItem(session));
+                            response.moveHandles.push_back(state.process->InsertItem(session->Clone()));
                             break;
 
                         case ipc::ControlCommand::QueryPointerBufferSize:

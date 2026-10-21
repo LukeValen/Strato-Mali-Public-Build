@@ -60,6 +60,11 @@ jobs:
       - name: Test Horizon GetInfo process queries (ASan/UBSan)
         run: python3 tests/test_get_info.py
 
+      - name: Test IPC startup sessions and applet events (ASan/UBSan)
+        run: |
+          python3 tests/test_ipc_startup.py
+          python3 tests/test_wait_synchronization.py
+
       - name: Test Horizon memory attributes (ASan/UBSan)
         run: python3 tests/test_memory_attributes.py
 
