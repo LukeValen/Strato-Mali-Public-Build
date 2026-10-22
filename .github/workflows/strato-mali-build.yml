@@ -67,6 +67,8 @@ jobs:
 
       - name: Test Horizon memory attributes (ASan/UBSan)
         run: python3 tests/test_memory_attributes.py
+      - name: Test stack memory unmapping
+        run: python3 tests/test_svc_unmap_memory.py
 
       - name: Test Host1x relocations (ASan/UBSan)
         run: |

@@ -380,7 +380,7 @@ namespace skyline {
              * Implements the memory manager side functionality of svcUnmapMemory
              * @note Argument validity must be checked by the caller
              */
-            void SvcUnmapMemory(span<u8> source, span<u8> destination);
+            bool SvcUnmapMemory(span<u8> source, span<u8> destination);
 
             /**
              * @brief Adds a reference to shared memory, extending its lifetime until `RemoveRef` is called

@@ -663,27 +663,34 @@ namespace skyline::kernel {
         return true;
     }
 
-    void MemoryManager::SvcUnmapMemory(span<u8> source, span<u8> destination) {
+    bool MemoryManager::SvcUnmapMemory(span<u8> source, span<u8> destination) {
         std::unique_lock lock{mutex};
+        std::vector<std::pair<u8 *, ChunkDescriptor>> sourceRanges, destinationRanges;
+        // Validate both complete ranges before restoring any permissions. In
+        // particular, a second unmap must not walk past the chunk-map sentinel.
+        if (!CollectSvcMemoryRange(source, 0, 0, sourceRanges) ||
+            !CollectSvcMemoryRange(destination, 0, 0, destinationRanges) ||
+            sourceRanges.front().second.permission != memory::Permission{false, false, false} ||
+            !sourceRanges.front().second.state.mapAllowed ||
+            destinationRanges.front().second.state != memory::states::Stack ||
+            destinationRanges.front().second.permission != memory::Permission{true, true, false})
+            return false;
 
-        auto dstChunk = chunks.lower_bound(destination.data());
-        if (destination.data() < dstChunk->first)
-            --dstChunk;
-        while (dstChunk->second.state == memory::states::Unmapped)
-            ++dstChunk;
+        for (const auto &desc : sourceRanges)
+            if (!desc.second.attributes.isBorrowed) return false;
 
-        if ((destination.data() + destination.size()) > dstChunk->first) [[likely]] {
-            ForeachChunkInRange(span<u8>{source.data() + (dstChunk->first - destination.data()), dstChunk->second.size}, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
-                desc.second.permission = dstChunk->second.permission;
-                desc.second.attributes.isBorrowed = false;
-                MapInternal(desc);
-            });
-
-            auto sourceHost{GetHostSpan(source)};
-            auto dstChunkHost{GetHostSpan(span<u8>{dstChunk->first, dstChunk->second.size})};
-            auto destinationOffset{dstChunk->first - destination.data()};
-            std::memcpy(sourceHost.data() + destinationOffset, dstChunkHost.data(), dstChunkHost.size());
+        // MapInternal can split or merge the map, so use snapshots instead of
+        // keeping an iterator into chunks while the source is being restored.
+        for (auto &desc : sourceRanges) {
+            desc.second.permission = destinationRanges.front().second.permission;
+            desc.second.attributes.isBorrowed = false;
+            MapInternal(desc);
         }
+
+        auto sourceHost{GetHostSpan(source)};
+        auto destinationHost{GetHostSpan(destination)};
+        std::memcpy(sourceHost.data(), destinationHost.data(), source.size());
+        return true;
     }
 
     void MemoryManager::AddRef(std::shared_ptr<type::KMemory> ptr) {

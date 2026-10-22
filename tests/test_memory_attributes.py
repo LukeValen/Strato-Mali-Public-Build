@@ -13,7 +13,7 @@ svc = (base / "svc.cpp").read_text()
 types = header[header.index("    namespace memory {"):header.index("        /**\n         * @brief A memory region")]
 functions = cpp[cpp.index("    void MemoryManager::MapInternal("):cpp.index("    void MemoryManager::ForeachChunkInRange(")]
 functions += cpp[cpp.index("    bool MemoryManager::CollectSvcMemoryRange("):cpp.index("    void MemoryManager::SetRegionBorrowed(")]
-functions += cpp[cpp.index("    bool MemoryManager::SvcMapMemory("):cpp.index("    void MemoryManager::SvcUnmapMemory(")]
+functions += cpp[cpp.index("    bool MemoryManager::SvcMapMemory("):cpp.index("    bool MemoryManager::SvcUnmapMemory(")]
 method = svc[svc.index("    void SetMemoryAttribute("):svc.index("    void MapMemory(")]
 source = r'''
 #include <algorithm>
