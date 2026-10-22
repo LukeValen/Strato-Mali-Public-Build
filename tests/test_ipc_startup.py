@@ -11,7 +11,7 @@ session = (base / 'kernel/types/KSession.h').read_text().replace('#include "KSyn
 manager = (base / 'services/serviceman.cpp').read_text()
 close = manager[manager.index('    void ServiceManager::CloseSession('):manager.index('    void ServiceManager::SyncRequestHandler(')]
 clone = manager[manager.index('                        case ipc::ControlCommand::CloneCurrentObject:'):manager.index('                        case ipc::ControlCommand::QueryPointerBufferSize:')]
-clone = clone[clone.index('                            response.moveHandles'):clone.index('                            break;')]
+clone = clone[clone.index('                            auto clone{'):clone.index('                            break;')]
 am = (base / 'services/am/controller/IApplicationFunctions.cpp').read_text()
 constructor = am[am.index('    IApplicationFunctions::IApplicationFunctions('):am.index('    Result IApplicationFunctions::PopLaunchParameter(')]
 event = am[am.index('    Result IApplicationFunctions::GetUnknownEvent('):am.index('    Result IApplicationFunctions::GetNotificationStorageChannelEvent(')]
@@ -41,7 +41,7 @@ namespace skyline {
 namespace type=kernel::type;
 struct Process {
  std::map<KHandle,std::shared_ptr<type::KSyncObject>> handles; KHandle next=0xd000;
- template<class T> KHandle InsertItem(std::shared_ptr<T> p){handles.emplace(next,p);return next++;}
+ template<class T> KHandle InsertItem(std::shared_ptr<T> &p){handles.emplace(next,p);return next++;}
  template<class T> std::shared_ptr<T> GetHandle(KHandle h){return std::dynamic_pointer_cast<T>(handles.at(h));}
 };
 namespace ipc {struct IpcRequest{};struct IpcResponse{std::vector<KHandle> copyHandles,moveHandles;};}

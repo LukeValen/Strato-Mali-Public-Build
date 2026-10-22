@@ -261,7 +261,8 @@ namespace skyline::service {
 
                         case ipc::ControlCommand::CloneCurrentObject:
                         case ipc::ControlCommand::CloneCurrentObjectEx:
-                            response.moveHandles.push_back(state.process->InsertItem(session->Clone()));
+                            auto clone{session->Clone()};
+                            response.moveHandles.push_back(state.process->InsertItem(clone));
                             break;
 
                         case ipc::ControlCommand::QueryPointerBufferSize:
