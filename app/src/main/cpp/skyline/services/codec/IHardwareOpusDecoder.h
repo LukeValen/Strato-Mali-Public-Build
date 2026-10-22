@@ -4,12 +4,14 @@
 #pragma once
 
 #include <opus.h>
+#include <opus_multistream.h>
 
 #include <common.h>
 #include <services/base_service.h>
 #include <kernel/types/KTransferMemory.h>
 
 namespace skyline::service::codec {
+    struct MultiStreamParametersEx;
     /**
      * @return The required output buffer size for decoding an Opus stream with the given parameters
      */
@@ -28,6 +30,7 @@ namespace skyline::service::codec {
       private:
         std::shared_ptr<kernel::type::KTransferMemory> workBuffer;
         OpusDecoder *decoderState{};
+        OpusMSDecoder *multiStreamState{};
         i32 sampleRate;
         i32 channelCount;
         u32 decoderOutputBufferSize;
@@ -59,6 +62,7 @@ namespace skyline::service::codec {
 
       public:
         IHardwareOpusDecoder(const DeviceState &state, ServiceManager &manager, i32 sampleRate, i32 channelCount, u32 workBufferSize, KHandle workBufferHandle, bool isIsLargerSize = false);
+        IHardwareOpusDecoder(const DeviceState &state, ServiceManager &manager, const MultiStreamParametersEx &params, u32 workBufferSize, KHandle workBufferHandle);
 
         /**
          * @brief Decodes the Opus source data, returns decoded data size and decoded sample count
@@ -78,12 +82,14 @@ namespace skyline::service::codec {
          * @url https://switchbrew.org/wiki/Audio_services#DecodeInterleaved
          */
         Result DecodeInterleaved(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result DecodeInterleavedForMultiStream(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         SERVICE_DECL(
             SFUNC(0x0, IHardwareOpusDecoder, DecodeInterleavedOld),
             SFUNC(0x4, IHardwareOpusDecoder, DecodeInterleavedWithPerfOld),
             SFUNC(0x6, IHardwareOpusDecoder, DecodeInterleaved), // DecodeInterleavedWithPerfAndResetOld is effectively the same as DecodeInterleaved
             SFUNC(0x8, IHardwareOpusDecoder, DecodeInterleaved),
+            SFUNC(0x9, IHardwareOpusDecoder, DecodeInterleavedForMultiStream),
         )
     };
 

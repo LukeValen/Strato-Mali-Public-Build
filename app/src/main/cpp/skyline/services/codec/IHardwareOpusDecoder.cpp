@@ -5,6 +5,7 @@
 #include <kernel/types/KProcess.h>
 
 #include "IHardwareOpusDecoder.h"
+#include "IHardwareOpusDecoderManager.h"
 
 namespace skyline::service::codec {
     u32 CalculateOutBufferSize(i32 sampleRate, i32 channelCount, i32 frameSize) {
@@ -27,6 +28,25 @@ namespace skyline::service::codec {
             throw OpusException(result);
     }
 
+    IHardwareOpusDecoder::IHardwareOpusDecoder(const DeviceState &state, ServiceManager &manager, const MultiStreamParametersEx &params, u32 workBufferSize, KHandle workBufferHandle)
+        : BaseService(state, manager),
+          sampleRate(params.sampleRate),
+          channelCount(params.channelCount),
+          workBuffer(state.process->GetHandle<kernel::type::KTransferMemory>(workBufferHandle)),
+          decoderOutputBufferSize(CalculateOutBufferSize(params.sampleRate, params.channelCount,
+                            params.useLargerFrameSize ? MaxFrameSizeEx : MaxFrameSizeNormal)) {
+        const int decoderSize{opus_multistream_decoder_get_size(params.streamCount, params.stereoStreamCount)};
+        if (decoderSize <= 0 || workBufferSize < static_cast<u32>(decoderSize) ||
+            workBuffer->host.size_bytes() < static_cast<size_t>(decoderSize))
+            throw exception("Invalid Opus multistream work buffer");
+
+        multiStreamState = reinterpret_cast<OpusMSDecoder *>(workBuffer->host.data());
+        const int result{opus_multistream_decoder_init(multiStreamState, sampleRate, channelCount,
+                          params.streamCount, params.stereoStreamCount, params.mappings.data())};
+        if (result != OPUS_OK)
+            throw OpusException(result);
+    }
+
     Result IHardwareOpusDecoder::DecodeInterleavedOld(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return DecodeInterleavedImpl(request, response);
     }
@@ -43,8 +63,17 @@ namespace skyline::service::codec {
         return DecodeInterleavedImpl(request, response, true);
     }
 
+    Result IHardwareOpusDecoder::DecodeInterleavedForMultiStream(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        if (request.Pop<u8>())
+            ResetContext();
+        return DecodeInterleavedImpl(request, response, true);
+    }
+
     void IHardwareOpusDecoder::ResetContext() {
-        opus_decoder_ctl(decoderState, OPUS_RESET_STATE);
+        if (multiStreamState)
+            opus_multistream_decoder_ctl(multiStreamState, OPUS_RESET_STATE);
+        else
+            opus_decoder_ctl(decoderState, OPUS_RESET_STATE);
     }
 
     Result IHardwareOpusDecoder::DecodeInterleavedImpl(ipc::IpcRequest &request, ipc::IpcResponse &response, bool writeDecodeTime) {
@@ -56,14 +85,20 @@ namespace skyline::service::codec {
 
         i32 opusPacketSize{dataIn.as<OpusDataHeader>().GetPacketSize()};
         i32 requiredInSize{opusPacketSize + static_cast<i32>(sizeof(OpusDataHeader))};
-        if (opusPacketSize > MaxInputBufferSize || dataIn.size() < requiredInSize)
+        if (opusPacketSize <= 0 || opusPacketSize > MaxInputBufferSize || dataIn.size() < requiredInSize)
             throw exception("Opus packet size mismatch: 0x{:X} (Requested: 0x{:X})", dataIn.size() - sizeof(OpusDataHeader), opusPacketSize);
 
         // Skip past the header in the input buffer to get the Opus packet
         auto sampleDataIn = dataIn.subspan(sizeof(OpusDataHeader));
 
         auto perfTimer{timesrv::TimeSpanType::FromNanoseconds(util::GetTimeNs())};
-        i32 decodedCount{opus_decode(decoderState, sampleDataIn.data(), opusPacketSize, dataOut.data(), static_cast<int>(decoderOutputBufferSize), false)};
+        const i32 maxSamples{std::min<i32>(decoderOutputBufferSize / channelCount,
+                                            static_cast<i32>(dataOut.size() / channelCount))};
+        if (maxSamples <= 0)
+            throw exception("Opus output buffer is empty");
+        i32 decodedCount{multiStreamState ?
+            opus_multistream_decode(multiStreamState, sampleDataIn.data(), opusPacketSize, dataOut.data(), maxSamples, false) :
+            opus_decode(decoderState, sampleDataIn.data(), opusPacketSize, dataOut.data(), maxSamples, false)};
         perfTimer = timesrv::TimeSpanType::FromNanoseconds(util::GetTimeNs()) - perfTimer;
 
         if (decodedCount < 0)

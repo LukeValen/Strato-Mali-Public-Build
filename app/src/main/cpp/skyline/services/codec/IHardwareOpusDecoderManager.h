@@ -19,6 +19,17 @@ namespace skyline::service::codec {
     };
     static_assert(sizeof(MultiStreamParameters) == 0x110);
 
+    struct MultiStreamParametersEx {
+        i32 sampleRate;
+        i32 channelCount;
+        i32 streamCount;
+        i32 stereoStreamCount;
+        i32 useLargerFrameSize;
+        i32 padding;
+        std::array<u8, 0x100> mappings;
+    };
+    static_assert(sizeof(MultiStreamParametersEx) == 0x118);
+
     /**
      * @brief Manages all instances of IHardwareOpusDecoder
      * @url https://switchbrew.org/wiki/Audio_services#hwopus
@@ -51,11 +62,16 @@ namespace skyline::service::codec {
          */
         Result GetWorkBufferSizeEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result OpenHardwareOpusDecoderForMultiStreamEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+        Result GetWorkBufferSizeForMultiStreamExEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, IHardwareOpusDecoderManager, OpenHardwareOpusDecoder),
             SFUNC(0x1, IHardwareOpusDecoderManager, GetWorkBufferSize),
             SFUNC(0x4, IHardwareOpusDecoderManager, OpenHardwareOpusDecoderEx),
             SFUNC(0x5, IHardwareOpusDecoderManager, GetWorkBufferSizeEx),
+            SFUNC(0x6, IHardwareOpusDecoderManager, OpenHardwareOpusDecoderForMultiStreamEx),
+            SFUNC(0x9, IHardwareOpusDecoderManager, GetWorkBufferSizeForMultiStreamExEx),
         )
     };
 }
