@@ -6,6 +6,7 @@
 #include <kernel/types/KProcess.h>
 #include <boost/regex/v5/regex.hpp>
 #include "nso.h"
+#include "pchtxt.h"
 
 namespace skyline::loader {
     NsoLoader::NsoLoader(std::shared_ptr<vfs::Backing> pBacking) : backing(std::move(pBacking)) {
@@ -48,6 +49,39 @@ namespace skyline::loader {
 
         executable.data.contents = GetSegment(backing, header.data, header.flags.dataCompressed ? header.dataCompressedSize : 0);
         executable.data.offset = header.data.memoryOffset;
+
+        if (loader && !loader->modExeFsPatches.empty()) {
+            std::array<u8, 32> buildId{};
+            std::memcpy(buildId.data(), header.buildId.data(), buildId.size());
+            for (const auto &path : loader->modExeFsPatches) {
+                try {
+                    const auto patches = mods::ReadPatchText(path.string(), buildId);
+                    // Check all writes before changing any part of this NSO.
+                    for (const auto &patch : patches) {
+                        const u64 address = patch.offset - 0x100;
+                        const auto fits = [&](const auto &segment) {
+                            return address >= segment.offset && address - segment.offset <= segment.contents.size() &&
+                                   patch.bytes.size() <= segment.contents.size() - (address - segment.offset);
+                        };
+                        if (!fits(executable.text) && !fits(executable.ro) && !fits(executable.data))
+                            throw exception("Pchtxt write outside NSO segments");
+                    }
+                    for (const auto &patch : patches) {
+                        const u64 address = patch.offset - 0x100;
+                        const auto apply = [&](auto &segment) {
+                            if (address < segment.offset || address - segment.offset > segment.contents.size() ||
+                                patch.bytes.size() > segment.contents.size() - (address - segment.offset)) return false;
+                            std::memcpy(segment.contents.data() + (address - segment.offset), patch.bytes.data(), patch.bytes.size());
+                            return true;
+                        };
+                        if (!apply(executable.text) && !apply(executable.ro)) apply(executable.data);
+                    }
+                    if (!patches.empty()) LOGI("Applied {} pchtxt writes from {} to {}", patches.size(), path.filename().string(), name);
+                } catch (const std::exception &error) {
+                    LOGW("Skipping pchtxt {}: {}", path.filename().string(), error.what());
+                }
+            }
+        }
 
         // Data and BSS are aligned together
         executable.bssSize = util::AlignUp(executable.data.contents.size() + header.bssSize, constant::PageSize) - executable.data.contents.size();

@@ -22,10 +22,10 @@ android {
         minSdk 29
         targetSdk 33
 
-        buildConfigField 'String', 'RELEASE_VERSION', '"0.0.5 RC3 fix update test"'
+        buildConfigField 'String', 'RELEASE_VERSION', '"0.0.5 RC3 Persona mod fix"'
         // Keep this monotonically increasing even when Actions checks out a shallow clone.
-        versionCode 507
-        versionName "0.0.5 RC3 fix update test"
+        versionCode 508
+        versionName "0.0.5 RC3 Persona mod fix"
 
         ndk {
             //noinspection ChromeOsAbiSupport

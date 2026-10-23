@@ -100,6 +100,7 @@ namespace skyline::loader {
         std::shared_ptr<vfs::Backing> baseRomFsSection;
         std::shared_ptr<vfs::FileSystem> installedExeFs;
         std::map<std::string, std::filesystem::path> modExeFsOverrides;
+        std::vector<std::filesystem::path> modExeFsPatches;
         std::map<u64, std::shared_ptr<vfs::Backing>> addOnContent;
 
         virtual ~Loader() = default;

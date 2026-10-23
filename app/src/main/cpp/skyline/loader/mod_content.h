@@ -170,6 +170,7 @@ namespace skyline::loader::mods {
         if (!fs::is_directory(base)) return;
         std::map<std::string, fs::path> exeFsReplacements;
         std::map<std::string, fs::path> romFsReplacements;
+        std::vector<fs::path> exeFsPatches;
         unsigned cheats = 0;
         try {
             // Ordered mod names have deterministic override precedence.
@@ -188,6 +189,10 @@ namespace skyline::loader::mods {
                     if (relative.empty() || relative.starts_with("..")) continue;
                     if (type == "romfs") romFsReplacements[relative] = entry.path();
                     else if (type == "exefs") {
+                        if (entry.path().extension() == ".pchtxt") {
+                            exeFsPatches.push_back(entry.path());
+                            continue;
+                        }
                         // Executable replacement only: limit to known ExeFS module names.
                         if (relative == "main" || relative == "rtld" || relative == "sdk" ||
                             relative == "main.npdm" || relative.starts_with("subsdk"))
@@ -196,6 +201,7 @@ namespace skyline::loader::mods {
                 }
             }
             loader.modExeFsOverrides = std::move(exeFsReplacements);
+            loader.modExeFsPatches = std::move(exeFsPatches);
             if (!romFsReplacements.empty() && loader.romFs) {
                 auto overlay = std::make_shared<RomFsOverlayBacking>(loader.romFs, romFsReplacements);
                 if (overlay->PatchCount()) loader.romFs = std::move(overlay);

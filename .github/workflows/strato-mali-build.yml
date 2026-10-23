@@ -112,6 +112,9 @@ jobs:
           python3 tests/test_nier_bloom_ab1.py
           python3 tests/test_nier_0042_release.py
 
+      - name: Validate ExeFS text patches
+        run: python3 tests/test_pchtxt_loader.py
+
       - name: Validate Kirby-only GPU diagnostics
         run: python3 tests/test_kirby_diagnostics.py
 
