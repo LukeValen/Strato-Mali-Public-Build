@@ -91,7 +91,7 @@ int main(){
  assert(loader::content::ParseMetadata(bad,game).type==0x82);
  put<u64>(bad,0,game+0x2000);rejects([&]{loader::content::ParseMetadata(bad,game);});
  auto rel=table(true,12,{{0,4,0},{3,2,1},{8,12,0}});
- auto sub=table(false,0x8010,{{0,0,1},{4,0,2}});
+ auto sub=table(false,16,{{0,0,1},{4,0,2}});
  auto parsed=vfs::patch::Parse(rel,true,3);assert(vfs::patch::Find(parsed,3)==1&&vfs::patch::Find(parsed,11)==2);
  rejects([&]{vfs::patch::Find(parsed,12);});
  rejects([&]{vfs::patch::Parse(rel,true,4);});
@@ -119,6 +119,13 @@ int main(){
  rejects([&]{vfs::BktrBacking x(base,paddedPatch,paddedPatch,rh,tooLong,{},{},0,false);});
  auto separated=sh;separated.offset++;
  rejects([&]{vfs::BktrBacking x(base,paddedPatch,paddedPatch,rh,separated,{},{},0,false);});
+ // A table advertising the metadata position as its physical data limit is
+ // inconsistent: the patch bytes stop at the relocation table's start.
+ auto wrongSubRoot=table(false,sh.offset,{{0,0,1},{4,0,2}});
+ auto wrongRaw=raw;
+ std::memcpy(wrongRaw.data()+sh.offset,wrongSubRoot.data(),wrongSubRoot.size());
+ auto wrongPatch=std::make_shared<vfs::Memory>(wrongRaw);
+ rejects([&]{vfs::BktrBacking x(base,wrongPatch,wrongPatch,rh,sh,{},{},0,false);});
  std::vector<u8> expected{4,5,6,102,103,104,105,106,12,13,14,15};
  for(size_t off=0;off<=expected.size();++off)for(size_t len=0;len<=expected.size()-off;++len){
   std::vector<u8>out(len);assert(bk.ReadUnchecked(out,off)==len);assert(std::equal(out.begin(),out.end(),expected.begin()+off));
@@ -129,7 +136,7 @@ int main(){
  auto invalidHeader=rh;invalidHeader.size=UINT64_MAX;rejects([&]{vfs::BktrBacking x(base,patch,patch,invalidHeader,sh,{},{},0,false);});
  // A terminal subsection sentinel at the patch-data/relocation boundary is
  // valid. A larger value still describes bytes inside the BKTR metadata.
- auto terminalSub=table(false,0x8010,{{0,0,1},{4,0,2},{16,0,3}});
+ auto terminalSub=table(false,16,{{0,0,1},{4,0,2},{16,0,3}});
  std::vector<u8> terminalRaw(raw);
  std::memcpy(terminalRaw.data()+0x8010,terminalSub.data(),terminalSub.size());
  auto terminalBacking=std::make_shared<vfs::Memory>(terminalRaw);
@@ -137,7 +144,7 @@ int main(){
  vfs::BktrBacking terminal(base,terminalBacking,terminalBacking,rh,terminalHeader,{},{},0,false);
  std::vector<u8> terminalRead(expected.size());
  assert(terminal.ReadUnchecked(terminalRead,0)==terminalRead.size() && terminalRead==expected);
- auto pastSub=table(false,0x8010,{{0,0,1},{4,0,2},{17,0,3}});
+ auto pastSub=table(false,16,{{0,0,1},{4,0,2},{17,0,3}});
  std::memcpy(terminalRaw.data()+0x8010,pastSub.data(),pastSub.size());
  auto pastBacking=std::make_shared<vfs::Memory>(terminalRaw);
  rejects([&]{vfs::BktrBacking x(base,pastBacking,pastBacking,rh,terminalHeader,{},{},0,false);});

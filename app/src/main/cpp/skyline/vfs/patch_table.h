@@ -42,7 +42,11 @@ namespace skyline::vfs::patch {
                     e.source = Value<uint32_t>(bytes, pos + 16);
                     Require(e.source <= 1, "Invalid BKTR source");
                 } else e.source = Value<uint32_t>(bytes, pos + 12);
-                Require(e.offset >= bucketStart && e.offset < bucketEnd && (!j ? e.offset == bucketStart : true), "Invalid BKTR offset");
+                // A subsection table may end with a zero-length boundary at
+                // the physical patch-data limit. It cannot be addressed by Find.
+                bool terminal = !relocation && i + 1 == buckets && j + 1 == count && e.offset == bucketEnd;
+                Require(e.offset >= bucketStart && (e.offset < bucketEnd || terminal) &&
+                        (!j ? e.offset == bucketStart : true), "Invalid BKTR offset");
                 Require(table.entries.empty() ? e.offset == 0 : e.offset > table.entries.back().offset, "Unsorted BKTR entries");
                 table.entries.push_back(e);
             }

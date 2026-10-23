@@ -58,7 +58,9 @@ namespace skyline::vfs {
             };
             relocations = parse(relocation, true);
             subsections = parse(subsection, false);
-            patch::Require(subsections.size == subsection.offset, "Invalid BKTR subsection limit");
+            // The physical address space ends where relocation metadata starts.
+            // The subsection table itself comes after the relocation table.
+            patch::Require(subsections.size == relocation.offset, "Invalid BKTR subsection limit");
             // The relocation table begins at the end of the patch data. Some
             // subsection tables explicitly contain that terminal boundary;
             // it is a valid zero-length sentinel, not another data region.
@@ -69,7 +71,6 @@ namespace skyline::vfs {
                     "Invalid BKTR data limit (last subsection=" +
                     std::to_string(subsections.entries.back().offset) +
                     ", patch data end=" + std::to_string(relocation.offset) + ")");
-            subsections.size = relocation.offset;
             size = relocations.size;
             for (size_t i{}; i < relocations.entries.size(); ++i) {
                 const auto &entry = relocations.entries[i];
