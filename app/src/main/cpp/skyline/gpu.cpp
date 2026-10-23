@@ -433,6 +433,10 @@ namespace skyline::gpu {
     }
 
     void GPU::Initialise() {
+        const bool personaPerfEnabled = state.loader && state.loader->programId == 0x01005CA01580E000ULL;
+        presentation.SetPersonaFastPresent(personaPerfEnabled);
+        if (personaPerfEnabled)
+            LOGI("PERSONA_PERF title gate active for 01005CA01580E000; collecting presentation metrics");
         // NieR:Automata The End of YoRHa Edition, including its updates.
         // Diagnostics are bounded and never change guest state.
         nierDiagnosticsEnabled = state.loader &&

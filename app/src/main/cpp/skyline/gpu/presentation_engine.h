@@ -4,6 +4,7 @@
 #pragma once
 
 #include <jni.h>
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -55,7 +56,7 @@ namespace skyline::gpu {
         perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
         // Persona 5 Royal only: count unavoidable waits separately from CPU
         // presentation work before considering more invasive GPU changes.
-        bool personaFastPresent{};
+        std::atomic<bool> personaFastPresent{false};
         struct PersonaPresentStats {
             std::chrono::steady_clock::time_point start{};
             u32 frames{};
@@ -65,6 +66,12 @@ namespace skyline::gpu {
 
       public:
         std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< Guest display VSync, signalled at 60 Hz independently of host refresh
+
+        // Called after OS::Execute has identified the game, before guest
+        // rendering begins. The presentation thread observes it atomically.
+        void SetPersonaFastPresent(bool enabled) {
+            personaFastPresent.store(enabled, std::memory_order_release);
+        }
 
       private:
         GuestFrameClock guestFrameClock; //!< Accessed only by the presentation thread

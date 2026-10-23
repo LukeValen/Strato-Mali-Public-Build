@@ -26,7 +26,6 @@ namespace skyline::gpu {
           presentSemaphores{util::MakeFilledArray<vk::raii::Semaphore, MaxSwapchainImageCount>(gpu.vkDevice, vk::SemaphoreCreateInfo{})},
           acquireSemaphores{util::MakeFilledArray<vk::raii::Semaphore, MaxSwapchainImageCount>(gpu.vkDevice, vk::SemaphoreCreateInfo{})},
           presentationTrack{static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()},
-          personaFastPresent{state.loader && state.loader->programId == 0x01005CA01580E000ULL},
           vsyncEvent{std::make_shared<kernel::type::KEvent>(state, true)},
           vsyncThread{&PresentationEngine::VsyncThread, this},
           presentationThread{&PresentationEngine::PresentationThread, this} {
@@ -79,10 +78,10 @@ namespace skyline::gpu {
     }
 
     void PresentationEngine::PresentFrame(const PresentableFrame &frame) {
+        const bool persona = personaFastPresent.load(std::memory_order_acquire);
         using Clock = std::chrono::steady_clock;
-        auto mark = personaFastPresent ? Clock::now() : Clock::time_point{};
-        const auto elapsedUs = [&mark, this]() -> i64 {
-            if (!personaFastPresent) return 0;
+        auto mark = persona ? Clock::now() : Clock::time_point{};
+        const auto elapsedUs = [&mark]() -> i64 {
             const auto now = Clock::now();
             const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now - mark).count();
             mark = now;
@@ -92,7 +91,7 @@ namespace skyline::gpu {
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
 
         frame.fence.Wait(state.soc->host1x);
-        if (personaFastPresent) personaStats.hostFenceUs += elapsedUs();
+        if (persona) personaStats.hostFenceUs += elapsedUs();
 
         std::scoped_lock textureLock(*frame.textureView);
 
@@ -113,7 +112,7 @@ namespace skyline::gpu {
             windowScalingMode = frame.scalingMode;
         }
 
-        if (!personaFastPresent || frame.transform != windowTransform) {
+        if (!persona || frame.transform != windowTransform) {
             if ((result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TRANSFORM, static_cast<i32>(frame.transform))))
                 throw exception("Setting the buffer transform to '{}' failed with {}", ToString(frame.transform), result);
         }
@@ -123,7 +122,7 @@ namespace skyline::gpu {
         auto &frameFence{frameFences[frameIndex]};
         if (frameFence)
             frameFence->Wait();
-        if (personaFastPresent) personaStats.frameFenceUs += elapsedUs();
+        if (persona) personaStats.frameFenceUs += elapsedUs();
 
         frameIndex = (frameIndex + 1) % swapchainImageCount;
 
@@ -134,7 +133,7 @@ namespace skyline::gpu {
             else
                 throw exception("vkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
         }
-        if (personaFastPresent) personaStats.acquireUs += elapsedUs();
+        if (persona) personaStats.acquireUs += elapsedUs();
 
         auto &nextImageTexture{images.at(nextImage.second)};
         auto &presentSemaphore{presentSemaphores[nextImage.second]};
@@ -145,7 +144,7 @@ namespace skyline::gpu {
             .levelCount = 1,
             .layerCount = 1,
         });
-        if (personaFastPresent) personaStats.copyUs += elapsedUs();
+        if (persona) personaStats.copyUs += elapsedUs();
 
         frameFence = nextImageTexture->cycle;
 
@@ -162,7 +161,7 @@ namespace skyline::gpu {
         std::this_thread::sleep_until(guestFrameClock.SchedulePresent(
             GuestFrameClock::Clock::now(), static_cast<u32>(frame.swapInterval),
             !*state.settings->disableFrameThrottling));
-        if (personaFastPresent) personaStats.throttleUs += elapsedUs();
+        if (persona) personaStats.throttleUs += elapsedUs();
 
         i64 timestamp{frame.timestamp};
         if (timestamp) {
@@ -187,7 +186,7 @@ namespace skyline::gpu {
 
         // The value was discarded. Avoid one native-window round trip per
         // Persona frame; retain the original path for every other title.
-        if (!personaFastPresent) {
+        if (!persona) {
             u64 frameId{};
             if ((result = window->perform(window, NATIVE_WINDOW_GET_NEXT_FRAME_ID, &frameId)))
                 throw exception("Retrieving the next frame's ID failed with {}", result);
@@ -203,9 +202,9 @@ namespace skyline::gpu {
                 .pWaitSemaphores = &*presentSemaphore,
             }); // We don't care about suboptimal images as they are caused by not respecting the transform hint, we handle transformations externally
         }
-        if (personaFastPresent) personaStats.presentUs += elapsedUs();
+        if (persona) personaStats.presentUs += elapsedUs();
 
-        if (personaFastPresent) {
+        if (persona) {
             auto &stats = personaStats;
             const auto now = Clock::now();
             if (!stats.frames) stats.start = now;

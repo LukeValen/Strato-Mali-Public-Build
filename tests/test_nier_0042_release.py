@@ -9,9 +9,9 @@ def source(p):
 class NierReleaseTest(unittest.TestCase):
     def test_release_version(self):
         gradle=(ROOT/"app/build.gradle").read_text()
-        self.assertIn('versionName "0.0.5 RC3 Persona performance test"',gradle)
-        self.assertIn("versionCode 509", gradle)
-        self.assertIn("buildConfigField 'String', 'RELEASE_VERSION', '\"0.0.5 RC3 Persona performance test\"'", gradle)
+        self.assertIn('versionName "0.0.5 RC3 Persona performance test 2"',gradle)
+        self.assertIn("versionCode 510", gradle)
+        self.assertIn("buildConfigField 'String', 'RELEASE_VERSION', '\"0.0.5 RC3 Persona performance test 2\"'", gradle)
 
     def test_patch_remains_active_without_capture(self):
         gpu=source("gpu.cpp")
