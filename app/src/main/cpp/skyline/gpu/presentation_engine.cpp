@@ -26,6 +26,7 @@ namespace skyline::gpu {
           presentSemaphores{util::MakeFilledArray<vk::raii::Semaphore, MaxSwapchainImageCount>(gpu.vkDevice, vk::SemaphoreCreateInfo{})},
           acquireSemaphores{util::MakeFilledArray<vk::raii::Semaphore, MaxSwapchainImageCount>(gpu.vkDevice, vk::SemaphoreCreateInfo{})},
           presentationTrack{static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()},
+          personaFastPresent{state.loader && state.loader->programId == 0x01005CA01580E000ULL},
           vsyncEvent{std::make_shared<kernel::type::KEvent>(state, true)},
           vsyncThread{&PresentationEngine::VsyncThread, this},
           presentationThread{&PresentationEngine::PresentationThread, this} {
@@ -78,10 +79,20 @@ namespace skyline::gpu {
     }
 
     void PresentationEngine::PresentFrame(const PresentableFrame &frame) {
+        using Clock = std::chrono::steady_clock;
+        auto mark = personaFastPresent ? Clock::now() : Clock::time_point{};
+        const auto elapsedUs = [&mark, this]() -> i64 {
+            if (!personaFastPresent) return 0;
+            const auto now = Clock::now();
+            const auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(now - mark).count();
+            mark = now;
+            return elapsed;
+        };
         std::unique_lock lock(mutex);
         surfaceCondition.wait(lock, [this]() { return vkSurface.has_value(); });
 
         frame.fence.Wait(state.soc->host1x);
+        if (personaFastPresent) personaStats.hostFenceUs += elapsedUs();
 
         std::scoped_lock textureLock(*frame.textureView);
 
@@ -102,14 +113,17 @@ namespace skyline::gpu {
             windowScalingMode = frame.scalingMode;
         }
 
-        if ((result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TRANSFORM, static_cast<i32>(frame.transform))))
-            throw exception("Setting the buffer transform to '{}' failed with {}", ToString(frame.transform), result);
+        if (!personaFastPresent || frame.transform != windowTransform) {
+            if ((result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TRANSFORM, static_cast<i32>(frame.transform))))
+                throw exception("Setting the buffer transform to '{}' failed with {}", ToString(frame.transform), result);
+        }
         windowTransform = frame.transform;
 
         auto &acquireSemaphore{acquireSemaphores[frameIndex]};
         auto &frameFence{frameFences[frameIndex]};
         if (frameFence)
             frameFence->Wait();
+        if (personaFastPresent) personaStats.frameFenceUs += elapsedUs();
 
         frameIndex = (frameIndex + 1) % swapchainImageCount;
 
@@ -120,6 +134,7 @@ namespace skyline::gpu {
             else
                 throw exception("vkAcquireNextImageKHR returned an unhandled result '{}'", vk::to_string(nextImage.first));
         }
+        if (personaFastPresent) personaStats.acquireUs += elapsedUs();
 
         auto &nextImageTexture{images.at(nextImage.second)};
         auto &presentSemaphore{presentSemaphores[nextImage.second]};
@@ -130,6 +145,7 @@ namespace skyline::gpu {
             .levelCount = 1,
             .layerCount = 1,
         });
+        if (personaFastPresent) personaStats.copyUs += elapsedUs();
 
         frameFence = nextImageTexture->cycle;
 
@@ -146,6 +162,7 @@ namespace skyline::gpu {
         std::this_thread::sleep_until(guestFrameClock.SchedulePresent(
             GuestFrameClock::Clock::now(), static_cast<u32>(frame.swapInterval),
             !*state.settings->disableFrameThrottling));
+        if (personaFastPresent) personaStats.throttleUs += elapsedUs();
 
         i64 timestamp{frame.timestamp};
         if (timestamp) {
@@ -168,9 +185,13 @@ namespace skyline::gpu {
         if (timestamp && (result = window->perform(window, NATIVE_WINDOW_SET_BUFFERS_TIMESTAMP, timestamp)))
             throw exception("Setting the buffer timestamp to {} failed with {}", timestamp, result);
 
-        u64 frameId{};
-        if ((result = window->perform(window, NATIVE_WINDOW_GET_NEXT_FRAME_ID, &frameId)))
-            throw exception("Retrieving the next frame's ID failed with {}", result);
+        // The value was discarded. Avoid one native-window round trip per
+        // Persona frame; retain the original path for every other title.
+        if (!personaFastPresent) {
+            u64 frameId{};
+            if ((result = window->perform(window, NATIVE_WINDOW_GET_NEXT_FRAME_ID, &frameId)))
+                throw exception("Retrieving the next frame's ID failed with {}", result);
+        }
 
         {
             std::scoped_lock queueLock{gpu.queueMutex};
@@ -181,6 +202,26 @@ namespace skyline::gpu {
                 .waitSemaphoreCount = 1,
                 .pWaitSemaphores = &*presentSemaphore,
             }); // We don't care about suboptimal images as they are caused by not respecting the transform hint, we handle transformations externally
+        }
+        if (personaFastPresent) personaStats.presentUs += elapsedUs();
+
+        if (personaFastPresent) {
+            auto &stats = personaStats;
+            const auto now = Clock::now();
+            if (!stats.frames) stats.start = now;
+            ++stats.frames;
+            if (frame.swapInterval == 1) ++stats.swapIntervalOne;
+            else if (frame.swapInterval == 2) ++stats.swapIntervalTwo;
+            else ++stats.otherIntervals;
+            const auto seconds = std::chrono::duration<double>(now - stats.start).count();
+            if (seconds >= 5.0) {
+                const auto msPerFrame = [&stats](i64 us) { return static_cast<double>(us) / stats.frames / 1000.0; };
+                LOGI("PERSONA_PERF fps={:.1f} frames={} interval_1={} interval_2={} other={} hostFenceMs={:.2f} frameFenceMs={:.2f} acquireMs={:.2f} copySubmitMs={:.2f} throttleMs={:.2f} presentMs={:.2f}",
+                     stats.frames / seconds, stats.frames, stats.swapIntervalOne, stats.swapIntervalTwo, stats.otherIntervals,
+                     msPerFrame(stats.hostFenceUs), msPerFrame(stats.frameFenceUs), msPerFrame(stats.acquireUs),
+                     msPerFrame(stats.copyUs), msPerFrame(stats.throttleUs), msPerFrame(stats.presentUs));
+                stats = {};
+            }
         }
 
         timestamp = (timestamp && !*state.settings->disableFrameThrottling) ? timestamp : getMonotonicNsNow(); // We tie FPS to the submission time rather than presentation timestamp, if we don't have the presentation timestamp available or if frame throttling is disabled as we want the maximum measured FPS to not be restricted to the refresh rate

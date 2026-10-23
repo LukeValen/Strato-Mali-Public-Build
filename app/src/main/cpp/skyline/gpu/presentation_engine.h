@@ -53,6 +53,15 @@ namespace skyline::gpu {
         i64 averageFrametimeNs{}; //!< The average time between frames in nanoseconds
         i64 averageFrametimeDeviationNs{}; //!< The average deviation of frametimes in nanoseconds
         perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
+        // Persona 5 Royal only: count unavoidable waits separately from CPU
+        // presentation work before considering more invasive GPU changes.
+        bool personaFastPresent{};
+        struct PersonaPresentStats {
+            std::chrono::steady_clock::time_point start{};
+            u32 frames{};
+            i64 hostFenceUs{}, frameFenceUs{}, acquireUs{}, copyUs{}, throttleUs{}, presentUs{};
+            u32 swapIntervalOne{}, swapIntervalTwo{}, otherIntervals{};
+        } personaStats;
 
       public:
         std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< Guest display VSync, signalled at 60 Hz independently of host refresh
