@@ -107,6 +107,18 @@ int main(){
  auto base=std::make_shared<vfs::Memory>(baseBytes),patch=std::make_shared<vfs::Memory>(raw);
  vfs::BktrHeader rh{16,0x8000,util::MakeMagic<u32>("BKTR"),1,3,0},sh{0x8010,0x8000,util::MakeMagic<u32>("BKTR"),1,2,0};
  vfs::BktrBacking bk(base,patch,patch,rh,sh,{},{},0,false);
+ // Silksong's update has 0x4200 bytes after its complete subsection table.
+ // The extra section data must not invalidate a correctly bounded BKTR map.
+ auto paddedRaw=raw;paddedRaw.resize(raw.size()+0x4200,0xa5);
+ auto paddedPatch=std::make_shared<vfs::Memory>(paddedRaw);
+ vfs::BktrBacking padded(base,paddedPatch,paddedPatch,rh,sh,{},{},0,false);
+ std::vector<u8> paddedRead(12);
+ assert(padded.ReadUnchecked(paddedRead,0)==paddedRead.size());
+ assert((paddedRead==std::vector<u8>{4,5,6,102,103,104,105,106,12,13,14,15}));
+ auto tooLong=sh;tooLong.size=paddedRaw.size()-sh.offset+1;
+ rejects([&]{vfs::BktrBacking x(base,paddedPatch,paddedPatch,rh,tooLong,{},{},0,false);});
+ auto separated=sh;separated.offset++;
+ rejects([&]{vfs::BktrBacking x(base,paddedPatch,paddedPatch,rh,separated,{},{},0,false);});
  std::vector<u8> expected{4,5,6,102,103,104,105,106,12,13,14,15};
  for(size_t off=0;off<=expected.size();++off)for(size_t len=0;len<=expected.size()-off;++len){
   std::vector<u8>out(len);assert(bk.ReadUnchecked(out,off)==len);assert(std::equal(out.begin(),out.end(),expected.begin()+off));

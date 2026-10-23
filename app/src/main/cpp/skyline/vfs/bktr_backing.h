@@ -46,7 +46,11 @@ namespace skyline::vfs {
                 patch::Require(header.magic == util::MakeMagic<u32>("BKTR") && header.version <= 1, "Unsupported BKTR format");
                 patch::Require(header.offset <= raw->size && header.size <= raw->size - header.offset && header.size <= 32 * 1024 * 1024, "Invalid BKTR table size");
             }
-            patch::Require(relocation.offset + relocation.size == subsection.offset && subsection.offset + subsection.size == raw->size, "Invalid BKTR section layout");
+            // BKTR tables are consecutive, but an NCA section may have bytes
+            // after the subsection table. Their presence does not extend the
+            // addressable patch data or the table itself.
+            patch::Require(relocation.offset + relocation.size == subsection.offset &&
+                           subsection.offset + subsection.size <= raw->size, "Invalid BKTR section layout");
             auto parse = [&](const BktrHeader &header, bool isRelocation) {
                 std::vector<u8> bytes(header.size);
                 patch::Require(metadata->ReadUnchecked(bytes, header.offset) == bytes.size(), "Short BKTR metadata read");
